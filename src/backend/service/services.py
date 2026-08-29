@@ -1,5 +1,5 @@
 from backend.repository.repositories import CustomerRepository
-from backend.schemas.Customer import Customer
+from backend.schemas.Customer import CustomerCreate, CustomerUpdate, Customer
 
 class CustomerService: 
     def __init__(self, customer_repo: CustomerRepository) -> None: 
@@ -22,12 +22,21 @@ class CustomerService:
         self.customer_cache.append(customer_data)
         self.save_customer_cache()
 
-    def get_customer_by_id(self, customer_id: int) -> dict | None:
+    def get_customer_by_id(self, customer_id: str) -> dict | None:
         customers = self.get_customers()
         for c in customers:
-            if c.get("customer_id") == customer_id:
+            if str(c.get("id")) == str(customer_id):
                 return c
         return None
+
+    def update_customer(self, customer_id: str, payload: CustomerUpdate) -> dict | None:
+        update_data = payload.model_dump(exclude_unset=True, exclude_none=True)
+        data = self.get_customer_by_id(customer_id)
+        if data is None:
+            return None
+        data.update(update_data)
+        self.save_customer_cache()
+        return data
 
 class OrderService:
     def __init__(self, order_repo) -> None:

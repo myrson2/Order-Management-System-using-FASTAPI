@@ -1,15 +1,12 @@
-import random
-from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator, ValidationError
+from pydantic import BaseModel, EmailStr, Field, field_validator, ValidationError
 from uuid import uuid4, UUID
 
 class Customer(BaseModel):
-    # model_config = ConfigDict(strict = True)
     id: UUID = Field(default_factory=uuid4)
     first_name: str = Field(max_length=100)
     last_name: str = Field(max_length=100)
     email: EmailStr
     phone: str = Field(max_length=11)
-    password: str = Field(min_length=8)
 
     @field_validator('email')
     @classmethod
@@ -26,6 +23,19 @@ class Customer(BaseModel):
             return value
         else:
             raise ValidationError('Password is not valid')
+
+    def __str__(self) -> str:
+        return f"{self.first_name} {self.last_name}"
+
+    @classmethod
+    def from_dict(cls, data: dict) -> Customer:
+        return cls(**data)  
+    
+    def to_dict(self):
+        return self.model_dump(mode='json')
+
+class CustomerCreate(Customer):
+    password: str = Field(min_length=8)
 
     @field_validator("password")
     @classmethod
@@ -44,12 +54,10 @@ class Customer(BaseModel):
 
         return value
 
-    def __str__(self) -> str:
-        return f"{self.first_name} {self.last_name}"
+class CustomerUpdate(BaseModel):
+    first_name: str | None = Field(default=None, min_length=1, max_length=100)
+    last_name: str | None = Field(default=None, min_length=1, max_length=100)
+    email: EmailStr | None = None
+    phone: str | None = Field(default=None, pattern=r"^\+?[0-9]{7,15}$")
 
-    @classmethod
-    def from_dict(cls, data: dict) -> Customer:
-        return cls(**data)  
-    
-    def to_dict(self):
-        return self.model_dump(mode='json')
+
