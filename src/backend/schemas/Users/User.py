@@ -1,12 +1,19 @@
+from datetime import datetime
 from pydantic import BaseModel, EmailStr, Field, field_validator, ValidationError
 from uuid import uuid4, UUID
+from enum import Enum
 
-class Customer(BaseModel):
+class EnumType(str, Enum):
+    CUSTOMER = 'customer'
+    MERCHANT = 'merchant'
+
+class User(BaseModel):
     id: UUID = Field(default_factory=uuid4)
     first_name: str = Field(max_length=100)
     last_name: str = Field(max_length=100)
     email: EmailStr
     phone: str = Field(max_length=11)
+    created_at: datetime = Field(default_factory=datetime.now)
 
     @field_validator('email')
     @classmethod
@@ -24,18 +31,15 @@ class Customer(BaseModel):
         else:
             raise ValidationError('Password is not valid')
 
-    def __str__(self) -> str:
-        return f"{self.first_name} {self.last_name}"
-
     @classmethod
-    def from_dict(cls, data: dict) -> Customer:
+    def from_dict(cls, data: dict) -> User:
         return cls(**data)  
     
     def to_dict(self):
         return self.model_dump(mode='json')
 
-class CustomerCreate(Customer):
-    password: str = Field(min_length=8)
+class UserCreate(User):
+    password: str = Field(..., min_length=8, max_length=100)
 
     @field_validator("password")
     @classmethod
@@ -53,11 +57,4 @@ class CustomerCreate(Customer):
             raise ValueError("Password must contain a special character")
 
         return value
-
-class CustomerUpdate(BaseModel):
-    first_name: str | None = Field(default=None, min_length=1, max_length=100)
-    last_name: str | None = Field(default=None, min_length=1, max_length=100)
-    email: EmailStr | None = None
-    phone: str | None = Field(default=None, pattern=r"^\+?[0-9]{7,15}$")
-
 

@@ -1,6 +1,9 @@
 import httpx
-from backend.schemas.Customer import CustomerCreate, Customer
+
+from backend.schemas.Users import Customer, Merchant
+from backend.schemas.Users.User import UserCreate
 from pydantic import ValidationError
+from backend.schemas.Users.User import EnumType
 
 class UserInterface:
     def __init__(self, url: str):
@@ -39,20 +42,49 @@ class UserInterface:
 
     def account_registration(self):
         print("\n--- REGISTER NEW ACCOUNT ---")
-        try:
-            first_name = input("First Name: ").strip()
-            last_name = input("Last Name: ").strip()
-            email = input("Email: ").strip()
-            phone_num = input("Phone Number: ").strip()
-            pwd = input("Password (min 8 chars): ").strip()
+        data = None
 
-            data = CustomerCreate(
-                first_name=first_name,
-                last_name=last_name,
-                email=email,
-                phone=phone_num,
-                password=pwd
-            )
+        try:
+            loop = True
+            while loop:
+                try:
+                    first_name = input("First Name: ").strip()
+                    last_name = input("Last Name: ").strip()
+                    email = input("Email: ").strip()
+                    phone_num = input("Phone Number: ").strip()
+                    pwd = input("Password (min 8 chars): ").strip()
+                    u_type = input("User Type: ").strip().lower()
+
+                    match u_type:
+                        case "merchant":
+                            data = Merchant(
+                                first_name=first_name,
+                                last_name=last_name,
+                                email=email,
+                                phone=phone_num,
+                                password=pwd
+                            )
+                        case "customer":
+                            data = Customer(
+                                first_name=first_name,
+                                last_name=last_name,
+                                email=email,
+                                phone=phone_num,
+                                password=pwd
+                            )
+                        case _:
+                            raise ValueError(f"\n[ERROR]: User type ({u_type}) is not valid.")
+
+                    loop = False
+
+                except ValidationError as e:
+                    print(e)
+                except ValueError as e:
+                    print(e)
+
+            if data is None:
+                raise ValueError("\n[ERROR] No data provided.")
+
             # Send HTTP POST to API Controller
             response = httpx.post(f"{self.url}/", json=data.to_dict(), timeout=5.0)
             if response.status_code == 201:

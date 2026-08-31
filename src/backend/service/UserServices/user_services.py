@@ -1,5 +1,5 @@
 from backend.repository.repositories import CustomerRepository
-from backend.schemas.Customer import CustomerCreate, CustomerUpdate, Customer
+from backend.schemas.Users.User import CustomerUpdate, Customer
 
 class CustomerService: 
     def __init__(self, customer_repo: CustomerRepository) -> None: 

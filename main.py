@@ -1,3 +1,4 @@
+
 import sys
 import time
 import threading
@@ -5,6 +6,8 @@ from pathlib import Path
 
 import uvicorn
 from dotenv import load_dotenv
+
+from backend.interface.app_interface import app_interface
 
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 load_dotenv()
@@ -22,5 +25,4 @@ if __name__ == "__main__":
     time.sleep(1.5)
 
     # 3. Launch Main CLI Interface
-    from backend.interface.main_interface import main_interface
-    main_interface()
+    app_interface()

@@ -1,8 +1,8 @@
 import os
 import httpx
 from dotenv import load_dotenv
-from backend.interface.handle_user_interface import UserInterface
-from backend.schemas.Customer import CustomerUpdate
+from backend.interface.handle_user import UserInterface
+from backend.schemas.Users.User import CustomerUpdate
 
 load_dotenv()
 

@@ -24,7 +24,7 @@ In a modern web application, backend services are decoupled from frontend client
 ```
 
 ### Key Takeaway: Network Decoupling
-- The **CLI Interface** (`user_interface.py` / `main_interface.py`) does **NOT** import `CustomerController.py` or call backend Python functions directly.
+- The **CLI Interface** (`user_interface.py` / `app_interface.py`) does **NOT** import `UserController.py` or call backend Python functions directly.
 - Instead, the CLI acts as an **independent HTTP Client** (using `httpx`) that sends network requests to `http://127.0.0.1:8000/api/v1/customer`.
 - The **FastAPI Server** (`app.py`) listens on port 8000, inspects incoming URL paths, and routes requests to the corresponding controller functions.
 
@@ -68,13 +68,13 @@ When a user interacts with the system (e.g. adding a customer):
 
 ## 🧩 Deep Dive: Code Breakdown Across Layers
 
-### 1. The Controller Layer ([`CustomerController.py`](file:///c:/Users/JoseMyrsonOBeros/Documents/Python/Mini%20Projects/Order%20Management%20System/backend/src/backend/controller/CustomerController.py))
+### 1. The Controller Layer ([`UserController.py`](file:///c:/Users/JoseMyrsonOBeros/Documents/Python/Mini%20Projects/Order%20Management%20System/backend/src/backend/controller/CustomerController.py))
 
 ```python
 from fastapi import APIRouter, Depends, HTTPException, status
 from backend.repository.repositories import CustomerRepository
-from backend.service.services import CustomerService
-from backend.schemas.Customer import Customer
+from backend.service.UserServices.user_services import CustomerService
+from backend.schemas.Users.User import Customer
 
 customer_repository = CustomerRepository()
 
@@ -118,7 +118,7 @@ def create_customer(customer: Customer, service: CustomerService = Depends(get_c
 
 ```python
 from fastapi import FastAPI
-from backend.controller.CustomerController import router as customer_router
+from backend.controller.UserController import router as customer_router
 
 app = FastAPI()
 
@@ -153,7 +153,7 @@ def customer_interface():
 
 ---
 
-### 4. Main Menu & Authentication ([`main_interface.py`](file:///c:/Users/JoseMyrsonOBeros/Documents/Python/Mini%20Projects/Order%20Management%20System/backend/src/backend/interface/main_interface.py))
+### 4. Main Menu & Authentication ([`app_interface.py`](file:///c:/Users/JoseMyrsonOBeros/Documents/Python/Mini%20Projects/Order%20Management%20System/backend/src/backend/interface/main_interface.py))
 
 ```python
 import httpx
@@ -180,15 +180,17 @@ def main_interface():
 
 ```python
 import threading, time, uvicorn
-from backend.interface.main_interface import main_interface
+from backend.interface.app_interface import main_interface
+
 
 def start_api_server():
     uvicorn.run("backend.app:app", host="127.0.0.1", port=8000, log_level="warning")
 
+
 if __name__ == "__main__":
     # 1. Start FastAPI server in background thread
     threading.Thread(target=start_api_server, daemon=True).start()
-    
+
     # 2. Wait 1.5s for port 8000 binding
     time.sleep(1.5)
 
