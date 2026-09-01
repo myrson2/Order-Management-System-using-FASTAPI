@@ -24,7 +24,7 @@ In a modern web application, backend services are decoupled from frontend client
 ```
 
 ### Key Takeaway: Network Decoupling
-- The **CLI Interface** (`user_interface.py` / `app_interface.py`) does **NOT** import `UserController.py` or call backend Python functions directly.
+- The **CLI Interface** (`user_interface.py` / `app_interface.py`) does **NOT** import `CustomerController.py` or call backend Python functions directly.
 - Instead, the CLI acts as an **independent HTTP Client** (using `httpx`) that sends network requests to `http://127.0.0.1:8000/api/v1/customer`.
 - The **FastAPI Server** (`app.py`) listens on port 8000, inspects incoming URL paths, and routes requests to the corresponding controller functions.
 
@@ -68,7 +68,7 @@ When a user interacts with the system (e.g. adding a customer):
 
 ## 🧩 Deep Dive: Code Breakdown Across Layers
 
-### 1. The Controller Layer ([`UserController.py`](file:///c:/Users/JoseMyrsonOBeros/Documents/Python/Mini%20Projects/Order%20Management%20System/backend/src/backend/controller/CustomerController.py))
+### 1. The Controller Layer ([`CustomerController.py`](file:///c:/Users/JoseMyrsonOBeros/Documents/Python/Mini%20Projects/Order%20Management%20System/backend/src/backend/controller/CustomerController.py))
 
 ```python
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -118,7 +118,7 @@ def create_customer(customer: Customer, service: CustomerService = Depends(get_c
 
 ```python
 from fastapi import FastAPI
-from backend.controller.UserController import router as customer_router
+from backend.controller.CustomerController import router as customer_router
 
 app = FastAPI()
 

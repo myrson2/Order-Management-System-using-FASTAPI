@@ -17,25 +17,77 @@ class User(BaseModel):
 
     @field_validator('email')
     @classmethod
-    def validate_email(cls, value):
+    def validate_email(cls, value: str) -> str:
+        """
+        Description / Purpose:
+            Validates that the provided email address uses a valid @gmail.com domain.
+
+        Args / Parameters:
+            value (str): The email address input string.
+
+        Returns:
+            str: The validated email address string.
+
+        Constraints / Notes:
+            Raises ValueError if the email string does not end with '@gmail.com'.
+        """
         if value.endswith('@gmail.com'):
             return value
         else:
-            raise ValidationError('Email address is not valid')
+            raise ValueError('Email address must end with @gmail.com')
 
     @field_validator('phone')
     @classmethod
-    def validate_phone(cls, value):
+    def validate_phone(cls, value: str) -> str:
+        """
+        Description / Purpose:
+            Validates that the phone number starts with '09' or is exactly 11 digits long.
+
+        Args / Parameters:
+            value (str): The phone number input string.
+
+        Returns:
+            str: The validated phone number string.
+
+        Constraints / Notes:
+            Raises ValueError if the phone number does not start with '09' or is not 11 digits.
+        """
         if value.startswith('09') or len(value) == 11:
             return value
         else:
-            raise ValidationError('Password is not valid')
+            raise ValueError('Phone number must start with 09 and be 11 digits long')
 
     @classmethod
-    def from_dict(cls, data: dict) -> User:
+    def from_dict(cls, data: dict) -> "User":
+        """
+        Description / Purpose:
+            Instantiates a User model from a dictionary payload.
+
+        Args / Parameters:
+            data (dict): Dictionary containing user attributes.
+
+        Returns:
+            User: Validated User model instance.
+
+        Constraints / Notes:
+            Unpacks keys as keyword arguments into model initialization.
+        """
         return cls(**data)  
     
-    def to_dict(self):
+    def to_dict(self) -> dict:
+        """
+        Description / Purpose:
+            Serializes the User model into a JSON-compatible dictionary.
+
+        Args / Parameters:
+            None.
+
+        Returns:
+            dict: Dictionary with UUIDs, datetimes, and complex objects serialized as JSON strings.
+
+        Constraints / Notes:
+            Uses mode='json' to ensure output is safe for file storage and HTTP network payloads.
+        """
         return self.model_dump(mode='json')
 
 class UserCreate(User):
@@ -43,7 +95,20 @@ class UserCreate(User):
 
     @field_validator("password")
     @classmethod
-    def validate_password(cls, value):
+    def validate_password(cls, value: str) -> str:
+        """
+        Description / Purpose:
+            Enforces strong password complexity requirements.
+
+        Args / Parameters:
+            value (str): The raw password string.
+
+        Returns:
+            str: The validated password string.
+
+        Constraints / Notes:
+            Must contain at least 1 uppercase letter, 1 lowercase letter, 1 digit, and 1 special character.
+        """
         if not any(char.isupper() for char in value):
             raise ValueError("Password must contain an uppercase letter")
 

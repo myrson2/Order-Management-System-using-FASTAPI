@@ -7,13 +7,25 @@ from pathlib import Path
 import uvicorn
 from dotenv import load_dotenv
 
-from backend.interface.app_interface import app_interface
+from backend.interface.app_interface import main_interface
 
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 load_dotenv()
 
-def start_api_server():
-    """Starts the FastAPI Uvicorn server in background."""
+def start_api_server() -> None:
+    """
+    Description / Purpose:
+        Launches the FastAPI Uvicorn ASGI web server on localhost port 8000 in a background daemon thread.
+
+    Args / Parameters:
+        None.
+
+    Returns:
+        None.
+
+    Constraints / Notes:
+        Runs as a daemon thread to allow simultaneous execution of the CLI client interface.
+    """
     uvicorn.run("backend.app:app", host="127.0.0.1", port=8000, log_level="warning")
 
 if __name__ == "__main__":
@@ -25,4 +37,4 @@ if __name__ == "__main__":
     time.sleep(1.5)
 
     # 3. Launch Main CLI Interface
-    app_interface()
+    main_interface()

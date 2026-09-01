@@ -84,7 +84,7 @@ Calling `model.model_dump(mode='json')` in `to_dict()` automatically converts no
 
 ### 2. Client-Server Serialization & Validation Pipeline
 * **Client (`app_interface.py`)**: `User.py` object $\xrightarrow{\text{to\_dict()}}$ `dict` $\xrightarrow{\text{httpx}}$ JSON Text over HTTP.
-* **Server (`UserController.py`)**: JSON Text over HTTP $\xrightarrow{\text{customer: Customer}}$ Validated `User.py` object.
+* **Server (`CustomerController.py`)**: JSON Text over HTTP $\xrightarrow{\text{customer: Customer}}$ Validated `User.py` object.
 * **Storage (`user_services.py` / `repositories.py`)**: `User.py` object $\xrightarrow{\text{to\_dict()}}$ `dict` $\xrightarrow{\text{json.dump()}}$ `customer.json`.
 
 ### 3. String Type Rationale for Phone Numbers
