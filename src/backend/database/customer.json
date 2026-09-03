@@ -1,0 +1,13 @@
+[
+    {
+        "id": "8f70ac6b-9973-48be-97bb-3d409bbeb2b2",
+        "first_name": "Myrson",
+        "last_name": "Beros",
+        "email": "myrson@gmail.com",
+        "phone": "09064495279",
+        "created_at": "2026-09-03T20:33:01.230605",
+        "password": "Myrson@1123",
+        "user_type": "customer",
+        "rewards": 0.0
+    }
+]
