@@ -2,7 +2,9 @@ import httpx
 
 from backend.repository.repositories import CustomerRepository, MerchantRepository
 from backend.schemas.Users import Customer, Merchant, User
-from backend.schemas.Users.User import UserLogin
+from backend.schemas.Users.Customer import CustomerResponse
+from backend.schemas.Users.Merchant import MerchantResponse
+from backend.schemas.Users.User import UserLogin, UserResponse
 
 
 class CustomerService:
@@ -220,8 +222,21 @@ class OrderService:
         """
         self.order_repo = order_repo
 
+
+def _find_user_in_repo(repo, email: str, password: str, model_class):
+    """Helper to search a repository and return the instantiated model if found."""
+    if not repo:
+        return None
+
+    match = next(
+        (item for item in repo if item.get("email") == email and item.get("password") == password),
+        None
+    )
+    return model_class.from_dict(match) if match else None
+
+
 class AuthenticationService:
-    def __init__(self, customer_url: str, merchant_url: str):
+    def __init__(self, customer_repo: CustomerRepository, merchant_repo: MerchantRepository) -> None:
         """
         Description / Purpose:
             Initializes UserInterface with target API endpoints for customer and merchant operations.
@@ -236,31 +251,22 @@ class AuthenticationService:
         Constraints / Notes:
             Stores URLs for HTTP client requests via httpx.
         """
-        self.customer_url = customer_url
-        self.merchant_url = merchant_url
+        self.customer_repo = customer_repo
+        self.merchant_repo = merchant_repo
 
-    def login(self, user: UserLogin) -> User | None:
-        account = user.to_dict()
-        get_customer_data = httpx.get(self.customer_url).json()
-        get_merchant_data = httpx.get(self.merchant_url).json()
+    def login(self, user: UserLogin) -> UserResponse | None:
+        email = user.email
+        password = user.password
 
-        if get_customer_data.status_code != 200 and get_merchant_data.status_code != 200:
-            return None
-        else:
-            customer = next(
-                 (customer for customer in get_customer_data.json() if customer["email"] == account["email"] and customer["password"] == account["password"]), None
-            )
+        # Check customer repository independently
+        if customer := _find_user_in_repo(self.customer_repo.load_repo(), email, password, Customer):
+            return CustomerResponse(**customer.model_dump())
 
-            merchant = next(
-                (merchant for merchant in get_merchant_data.json() if merchant["email"] == account["email"] and merchant["password"] == account["password"]), None
-            )
+        # Check merchant repository independently
+        if merchant := _find_user_in_repo(self.merchant_repo.load_repo(), email, password, Merchant):
+            return MerchantResponse(**merchant.model_dump())
 
-            if customer:
-                return Customer.from_dict(customer)
-            elif merchant:
-                return Merchant.from_dict(merchant)
-            else:
-                return None
+        return None
 
     def logout(self):
         pass

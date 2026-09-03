@@ -1,21 +1,26 @@
 import os
+from pathlib import Path
+
 from fastapi import APIRouter, Depends, HTTPException, status
+from backend.repository.repositories import CustomerRepository, MerchantRepository
 from backend.schemas.Users.User import UserLogin
 from backend.service.UserServices.user_services import AuthenticationService
 
 API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000/api/v1")
-AUTH_SERVICE_URL = f"{API_BASE_URL}/auth"
-CUSTOMER_URL = f"{API_BASE_URL}/customer"
-MERCHANT_URL = f"{API_BASE_URL}/merchant"
+AUTH_SERVICE_URL = f"/api/v1/auth"
+target_path = Path(__file__).resolve().parent.parent / "database"
+customer_repo = CustomerRepository(target_path / "customer.json")
+merchant_repo = MerchantRepository(target_path / "merchant.json")
+authentication_service = AuthenticationService(customer_repo, merchant_repo)
 
 router = APIRouter(prefix=AUTH_SERVICE_URL, tags=["Authentication"])
 
 def get_auth_service() -> AuthenticationService:
     return authentication_service
 
-@router.get("/login")
+@router.post("/login")
 def get_login_in(user: UserLogin, service: AuthenticationService = Depends(get_auth_service)):
     account = service.login(user)
     if account is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
     return account

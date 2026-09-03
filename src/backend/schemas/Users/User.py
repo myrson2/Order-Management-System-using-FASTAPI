@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, EmailStr, Field, field_validator, ValidationError
+from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict
 from uuid import uuid4, UUID
 from enum import Enum
 
@@ -123,6 +123,25 @@ class UserCreate(User):
 
         return value
 
-class UserLogin(User):
-    password: str = Field(..., min_length=8, max_length=100)
+class UserLogin(BaseModel):
     email: EmailStr
+    password: str = Field(..., min_length=8, max_length=100)
+
+    def to_dict(self) -> dict:
+        return self.model_dump(mode="json")
+
+class UserResponse(BaseModel):
+    id: UUID = Field(default_factory=uuid4)
+    first_name: str = Field(max_length=100)
+    last_name: str = Field(max_length=100)
+    email: EmailStr
+    phone: str = Field(max_length=11)
+    user_type: EnumType
+    created_at: datetime = Field(default_factory=datetime.now)
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        return cls(**data)
+
+    def to_dict(self) -> dict:
+        return self.model_dump(mode="json")

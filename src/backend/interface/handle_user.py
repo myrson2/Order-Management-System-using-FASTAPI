@@ -1,7 +1,7 @@
 import httpx
 
-from backend.schemas.Users import Customer, Merchant
-from backend.schemas.Users.User import User, UserCreate, UserLogin
+from backend.schemas.Users import Customer, CustomerResponse, Merchant, MerchantResponse
+from backend.schemas.Users.User import User, UserCreate, UserLogin, UserResponse
 from pydantic import ValidationError
 from backend.schemas.Users.User import EnumType
 
@@ -26,7 +26,7 @@ class UserInterface:
         self.customer_url = customer_url
         self.merchant_url = merchant_url
 
-    def user_authentication(self) -> User | None:
+    def user_authentication(self) -> UserResponse | None:
         """
         Description / Purpose:
             Prompts for credentials, queries API controller over HTTP, and verifies user login.
@@ -35,10 +35,10 @@ class UserInterface:
             None.
 
         Returns:
-            User | None: Logged-in Customer/User object if authentication succeeds, or None.
+            UserResponse | None: Logged-in CustomerResponse/MerchantResponse object if authentication succeeds, or None.
 
         Constraints / Notes:
-            Sends HTTP GET request to API backend and handles network/validation exceptions.
+            Sends HTTP POST request to API backend and handles network/validation exceptions.
         """
         print("\n--- LOGIN ---")
 
@@ -47,14 +47,21 @@ class UserInterface:
             password = input("Enter Password: ").strip()
 
             user_login = UserLogin(email=email, password=password)
-            response = httpx.post("http://127.0.0.1:8000/api/v1/auth/login", json=user_login.to_dict(), timeout=5.0)
+            response = httpx.post("http://127.0.0.1:8000/api/v1/auth/login", json=user_login.model_dump(mode="json"), timeout=5.0)
 
-            if response.status_code != 200:
-                raise ValueError(f"\n[ERROR]: User login failed with status code {response.status_code}")
+            if response.status_code == 200:
+                user_dict = response.json()
+                if user_dict.get("user_type") == EnumType.MERCHANT:
+                    return MerchantResponse(**user_dict)
+                return CustomerResponse(**user_dict)
+            elif response.status_code in (401, 404):
+                print("\n[LOGIN FAILED] Invalid email or password.")
+                return None
+            else:
+                print(f"\n[API ERROR {response.status_code}]: {response.text}")
+                return None
 
-            return user_login
-
-        except ValueError as e:
+        except (ValidationError, ValueError) as e:
             print(f"\n{e}")
             return None
         except httpx.RequestError:
