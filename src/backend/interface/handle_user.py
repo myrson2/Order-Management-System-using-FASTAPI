@@ -1,7 +1,7 @@
 import httpx
 
 from backend.schemas.Users import Customer, Merchant
-from backend.schemas.Users.User import User, UserCreate
+from backend.schemas.Users.User import User, UserCreate, UserLogin
 from pydantic import ValidationError
 from backend.schemas.Users.User import EnumType
 
@@ -46,22 +46,13 @@ class UserInterface:
             email = input("Enter Email (Format: @gmail.com): ").strip()
             password = input("Enter Password: ").strip()
 
-            # Query API Controller for customers list
-            response = httpx.get(f"{self.customer_url}/", timeout=5.0)
+            user_login = UserLogin(email=email, password=password)
+            response = httpx.post("http://127.0.0.1:8000/api/v1/auth/login", json=user_login.to_dict(), timeout=5.0)
 
-            if response.status_code == 200:
-                customers = response.json()
-                user_match = next(
-                    (c for c in customers if c.get("email") == email and c.get("password") == password),
-                    None
-                )
-                if user_match is None:
-                    print("\n[LOGIN FAILED] Invalid email or password.")
-                    return None
-                return Customer.from_dict(user_match)
+            if response.status_code != 200:
+                raise ValueError(f"\n[ERROR]: User login failed with status code {response.status_code}")
 
-            else:
-                raise ConnectionError(f"\n[ERROR {response.status_code}]: {response.text}")
+            return user_login
 
         except ValueError as e:
             print(f"\n{e}")
@@ -135,6 +126,9 @@ class UserInterface:
                 raise ValueError("\n[ERROR] No data provided.")
 
             # Send HTTP POST to API Controller
+
+            if response is None:
+                raise ValueError("\n[ERROR] No response provided.")
 
             if response.status_code == 201:
                 print(f"\n[API 201 SUCCESS] Account registered! You can now log in.")

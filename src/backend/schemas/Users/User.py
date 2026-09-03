@@ -123,3 +123,6 @@ class UserCreate(User):
 
         return value
 
+class UserLogin(User):
+    password: str = Field(..., min_length=8, max_length=100)
+    email: EmailStr

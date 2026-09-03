@@ -15,10 +15,10 @@ def get_merchant_service() -> MerchantService:
 router = APIRouter(prefix="/api/v1/merchant", tags=["Merchant"])
 
 @router.get("/")
-def get_customers(service: MerchantService = Depends(get_merchant_service)):
-    return service.get_customers()
+def get_users(service: MerchantService = Depends(get_merchant_service)):
+    return service.get_merchants()
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-def create_customer(merchant: Merchant, service: MerchantService = Depends(get_merchant_service)):
+def create_merchant(merchant: Merchant, service: MerchantService = Depends(get_merchant_service)):
     print(merchant.model_dump())
     service.add_merchant(merchant.to_dict())
