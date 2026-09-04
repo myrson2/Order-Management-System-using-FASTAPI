@@ -3,9 +3,15 @@ from backend.repository.repositories import CustomerRepository, MerchantReposito
 from backend.schemas.Users import Customer, Merchant
 from backend.service.UserServices.user_services import MerchantService
 from pathlib import Path
+import json
 
 target_path = Path(__file__).resolve().parent.parent / "database"
 file_path = Path(target_path) / "merchant.json"
+
+if not file_path.exists():
+    with open(file_path, "w", encoding="utf-8") as file:
+        json.dump([], file)
+
 merchant_repository = MerchantRepository(file_path)
 merchant_service = MerchantService(merchant_repository)
 

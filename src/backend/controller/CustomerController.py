@@ -3,9 +3,15 @@ from backend.repository.repositories import CustomerRepository
 from backend.schemas.Users import Customer
 from backend.service.UserServices.user_services import CustomerService
 from pathlib import Path
+import json
 
 target_path = Path(__file__).resolve().parent.parent / "database"
 file_path = Path(target_path) / "customer.json"
+
+if not file_path.exists():
+    with open(file_path, "w", encoding="utf-8") as file:
+        json.dump([], file)
+
 customer_repository = CustomerRepository(file_path)
 customer_service = CustomerService(customer_repository)
 

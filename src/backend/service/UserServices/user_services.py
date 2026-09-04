@@ -1,7 +1,6 @@
-import httpx
 
 from backend.repository.repositories import CustomerRepository, MerchantRepository
-from backend.schemas.Users import Customer, Merchant, User
+from backend.schemas.Users import Customer, Merchant
 from backend.schemas.Users.Customer import CustomerResponse
 from backend.schemas.Users.Merchant import MerchantResponse
 from backend.schemas.Users.User import UserLogin, UserResponse
@@ -115,6 +114,13 @@ class CustomerService:
                 return c
         return None
 
+    def update_customer(self, customer_data):
+        for i, c in enumerate(self.customer_cache):
+            if str(c.get("id")) == str(customer_data.get('id')):
+                self.customer_cache[i] = customer_data
+                self.save_customer_cache()
+                break
+
 class MerchantService:
     """Business logic and caching service for merchant operations."""
 
@@ -203,6 +209,14 @@ class MerchantService:
         self.merchant_cache.append(merchant_data)
         self.save_merchant_cache()
 
+    def update_merchant(self, merchant_data):
+        print(merchant_data)
+        for i, c in enumerate(self.merchant_cache):
+            if str(c.get("id")) == str(merchant_data.get("id")):
+                self.merchant_cache[i] = merchant_data
+                self.save_merchant_cache()
+                break
+
 class OrderService:
     """Business logic service for managing order transactions."""
 
@@ -232,11 +246,12 @@ def _find_user_in_repo(repo, email: str, password: str, model_class):
         (item for item in repo if item.get("email") == email and item.get("password") == password),
         None
     )
+    print(match)
     return model_class.from_dict(match) if match else None
 
 
 class AuthenticationService:
-    def __init__(self, customer_repo: CustomerRepository, merchant_repo: MerchantRepository) -> None:
+    def __init__(self, customer_service: CustomerService, merchant_service: MerchantService) -> None:
         """
         Description / Purpose:
             Initializes UserInterface with target API endpoints for customer and merchant operations.
@@ -251,19 +266,23 @@ class AuthenticationService:
         Constraints / Notes:
             Stores URLs for HTTP client requests via httpx.
         """
-        self.customer_repo = customer_repo
-        self.merchant_repo = merchant_repo
+        self.customer_service = customer_service
+        self.merchant_service = merchant_service
 
     def login(self, user: UserLogin) -> UserResponse | None:
         email = user.email
         password = user.password
 
         # Check customer repository independently
-        if customer := _find_user_in_repo(self.customer_repo.load_repo(), email, password, Customer):
+        if customer := _find_user_in_repo(self.customer_service.customer_cache, email, password, Customer):
+            customer.online()
+            self.customer_service.update_customer(customer.to_dict())
             return CustomerResponse(**customer.model_dump())
 
         # Check merchant repository independently
-        if merchant := _find_user_in_repo(self.merchant_repo.load_repo(), email, password, Merchant):
+        if merchant := _find_user_in_repo(self.merchant_service.merchant_cache, email, password, Merchant):
+            merchant.online()
+            self.merchant_service.update_merchant(merchant.to_dict())
             return MerchantResponse(**merchant.model_dump())
 
         return None

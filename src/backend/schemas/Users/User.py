@@ -1,11 +1,15 @@
 from datetime import datetime
-from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from uuid import uuid4, UUID
 from enum import Enum
 
 class EnumType(str, Enum):
     CUSTOMER = 'customer'
     MERCHANT = 'merchant'
+
+class ActiveStatus(str, Enum):
+    ONLINE = 'online'
+    OFFLINE = 'offline'
 
 class User(BaseModel):
     id: UUID = Field(default_factory=uuid4)
@@ -14,6 +18,7 @@ class User(BaseModel):
     email: EmailStr
     phone: str = Field(max_length=11)
     created_at: datetime = Field(default_factory=datetime.now)
+    active_status: ActiveStatus = ActiveStatus.OFFLINE
 
     @field_validator('email')
     @classmethod
@@ -83,12 +88,19 @@ class User(BaseModel):
             None.
 
         Returns:
-            dict: Dictionary with UUIDs, datetimes, and complex objects serialized as JSON strings.
+            dict: Dictionary with UUIDs, datetime, and complex objects serialized as JSON strings.
 
         Constraints / Notes:
             Uses mode='json' to ensure output is safe for file storage and HTTP network payloads.
         """
         return self.model_dump(mode='json')
+
+    def online(self) -> None:
+        self.active_status = ActiveStatus.ONLINE
+
+    def offline(self) -> None:
+        self.active_status = ActiveStatus.OFFLINE
+
 
 class UserCreate(User):
     password: str = Field(..., min_length=8, max_length=100)

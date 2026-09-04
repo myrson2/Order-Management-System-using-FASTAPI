@@ -1,7 +1,7 @@
 import httpx
 
 from backend.schemas.Users import Customer, CustomerResponse, Merchant, MerchantResponse
-from backend.schemas.Users.User import User, UserCreate, UserLogin, UserResponse
+from backend.schemas.Users.User import UserLogin, UserResponse
 from pydantic import ValidationError
 from backend.schemas.Users.User import EnumType
 
@@ -26,7 +26,8 @@ class UserInterface:
         self.customer_url = customer_url
         self.merchant_url = merchant_url
 
-    def user_authentication(self) -> UserResponse | None:
+    @staticmethod
+    def user_authentication() -> UserResponse | None:
         """
         Description / Purpose:
             Prompts for credentials, queries API controller over HTTP, and verifies user login.
@@ -61,7 +62,7 @@ class UserInterface:
                 print(f"\n[API ERROR {response.status_code}]: {response.text}")
                 return None
 
-        except (ValidationError, ValueError) as e:
+        except ValidationError as e:
             print(f"\n{e}")
             return None
         except httpx.RequestError:
@@ -125,7 +126,7 @@ class UserInterface:
                     loop = False
 
                 except ValidationError as e:
-                    print(e)
+                    print("validation error: ", e)
                 except ValueError as e:
                     print(e)
 

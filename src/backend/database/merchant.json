@@ -1,0 +1,15 @@
+[
+    {
+        "id": "760c184f-1dc0-4c7b-b8dc-2853dbf5528f",
+        "first_name": "Daryll",
+        "last_name": "Lanic",
+        "email": "daryll@gmail.com",
+        "phone": "09064495279",
+        "created_at": "2026-09-05T00:58:54.400260",
+        "active_status": "online",
+        "password": "Lanic@123",
+        "user_type": "merchant",
+        "store_name": "LanicGadgets",
+        "tax_id": "9e0112c8-bd95-4cb3-a652-582e1d29483b"
+    }
+]
