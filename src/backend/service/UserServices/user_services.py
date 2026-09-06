@@ -3,7 +3,7 @@ from backend.repository.repositories import CustomerRepository, MerchantReposito
 from backend.schemas.Users import Customer, Merchant
 from backend.schemas.Users.Customer import CustomerResponse
 from backend.schemas.Users.Merchant import MerchantResponse
-from backend.schemas.Users.User import UserLogin, UserResponse
+from backend.schemas.Users.User import UserLogin, UserResponse, EnumType, ActiveStatus
 
 
 class CustomerService:
@@ -210,12 +210,31 @@ class MerchantService:
         self.save_merchant_cache()
 
     def update_merchant(self, merchant_data):
-        print(merchant_data)
         for i, c in enumerate(self.merchant_cache):
             if str(c.get("id")) == str(merchant_data.get("id")):
                 self.merchant_cache[i] = merchant_data
                 self.save_merchant_cache()
                 break
+
+    def get_merchant_by_id(self, merchant_id: str) -> dict | None:
+        """
+        Description / Purpose:
+            Searches for a customer in cache by matching unique ID string.
+
+        Args / Parameters:
+            customer_id (str): Customer UUID string to search for.
+
+        Returns:
+            dict | None: The matching customer dictionary if found, or None.
+
+        Constraints / Notes:
+            Compares string representation of ID fields.
+        """
+        merchants = self.get_merchants()
+        for m in merchants:
+            if str(m.get("id")) == str(merchant_id):
+                return m
+        return None
 
 class OrderService:
     """Business logic service for managing order transactions."""
@@ -246,7 +265,6 @@ def _find_user_in_repo(repo, email: str, password: str, model_class):
         (item for item in repo if item.get("email") == email and item.get("password") == password),
         None
     )
-    print(match)
     return model_class.from_dict(match) if match else None
 
 
@@ -287,5 +305,28 @@ class AuthenticationService:
 
         return None
 
-    def logout(self):
-        pass
+    def logout(self, user_res: UserResponse) -> bool:
+        # Check the enum type
+        # get the right cache based on enum type
+        # get the details based on id
+        # then change status to offline
+        #save to cache and repository
+        status = False
+        if user_res.user_type == EnumType.MERCHANT.value:
+            merchant = Merchant.from_dict(self.merchant_service.get_merchant_by_id(str(user_res.id)))
+            merchant.offline()
+            self.merchant_service.update_merchant(merchant.to_dict())
+            status = True
+        else:
+            customer = Customer.from_dict(self.customer_service.get_customer_by_id(str(user_res.id)))
+            customer.offline()
+            self.customer_service.update_customer(customer.to_dict())
+            status = True
+
+        return status
+
+
+
+
+
+

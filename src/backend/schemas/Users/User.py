@@ -149,6 +149,7 @@ class UserResponse(BaseModel):
     email: EmailStr
     phone: str = Field(max_length=11)
     user_type: EnumType
+    active_status: ActiveStatus
     created_at: datetime = Field(default_factory=datetime.now)
 
     @classmethod

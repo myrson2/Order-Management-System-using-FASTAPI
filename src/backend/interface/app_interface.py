@@ -1,7 +1,10 @@
 import os
-import httpx
 from dotenv import load_dotenv
+
+from backend.interface import merchant_interface
 from backend.interface.handle_user import UserInterface
+from backend.interface.merchant_interface import MerchantInterface
+from backend.schemas.Users import MerchantResponse
 
 load_dotenv()
 
@@ -78,8 +81,6 @@ def main_interface() -> None:
             match choice:
                 case "1": # Login 
                     current_user = user_interface.user_authentication()
-                    if current_user is not None: 
-                        print(f"\nLogged in as: {current_user.first_name} {current_user.last_name} ({current_user.email})")
                 case "2": # Register 
                     user_interface.account_registration()
                 case "3":
@@ -88,47 +89,16 @@ def main_interface() -> None:
                 case _:
                     print("\n[ERROR] Invalid choice. Enter 1-3.")
         else:
-
             if current_user is None:
-                return
-            #Order Interface
-            order_menu()
-            choice = input("Select option (1-3): ").strip()
+                return None
 
-            match choice:
-                case "1":
-                    pass
-                case "2":
-                    # print(current_user.id)
-                    # print("\nPress Enter to skip entries you don't want to edit.")
-                    # first_name = input("First Name: ").strip()
-                    # last_name = input("Last Name: ").strip()
-                    # email = input("Email: ").strip()
-                    # phone_num = input("Phone Number: ").strip()
-                    #
-                    # data = CustomerUpdate(
-                    #     first_name=first_name if first_name else None,
-                    #     last_name=last_name if last_name else None,
-                    #     email=email if email else None,
-                    #     phone=phone_num if phone_num else None,
-                    # )
-                    #
-                    # response = httpx.patch(
-                    #     f"{CUSTOMER_URL}/{current_user.id}",
-                    #     json=data.model_dump(mode='json', exclude_none=True),
-                    #     timeout=5.0
-                    # )
-                    #
-                    # if response.status_code == 200:
-                    #     print(f"\n[API 200 SUCCESS] Account updated successfully!")
-                    # else:
-                    #     print(f"\n[API ERROR {response.status_code}]: {response.text}")
-                    pass
-                case "3":
-                    print(f"\n[SUCCESS] Logged out {current_user.first_name}.")
-                    current_user = None  # Reset session state
-                case _:
-                    print("\n[ERROR] Invalid choice. Enter 1-3.")
+            if isinstance(current_user, MerchantResponse):
+                current_user = merchant_interface.merchant_interface(current_user)
+            else:
+                print("NOPE ITS NOT")
+
+            current_user = None
+
 
 if __name__ == "__main__":
     main_interface()
