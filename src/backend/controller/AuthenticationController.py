@@ -4,7 +4,8 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, status
 from backend.repository.repositories import CustomerRepository, MerchantRepository
 from backend.schemas.Users.User import UserLogin, UserResponse
-from backend.service.UserServices.user_services import AuthenticationService, CustomerService, MerchantService
+from backend.service.user_services import CustomerService, MerchantService
+from backend.service.authentication_service import AuthenticationService
 
 API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000/api/v1")
 AUTH_SERVICE_URL = f"/api/v1/auth"

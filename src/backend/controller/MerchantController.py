@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from backend.repository.repositories import CustomerRepository, MerchantRepository
-from backend.schemas.Users import Customer, Merchant
-from backend.service.UserServices.user_services import MerchantService
+from fastapi import APIRouter, Depends, status
+from backend.repository.repositories import MerchantRepository
+from backend.schemas.Users import Merchant
+from backend.service.user_services import MerchantService
 from pathlib import Path
 import json
 
@@ -28,3 +28,7 @@ def get_users(service: MerchantService = Depends(get_merchant_service)):
 def create_merchant(merchant: Merchant, service: MerchantService = Depends(get_merchant_service)):
     print(merchant.model_dump())
     service.add_merchant(merchant.to_dict())
+
+@router.post("/{merchant_id}/products", status_code=status.HTTP_200_OK)
+def create_a_product(merchant_id: str, service: MerchantService = Depends(get_merchant_service)):
+    pass

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from backend.repository.repositories import CustomerRepository
 from backend.schemas.Users import Customer
-from backend.service.UserServices.user_services import CustomerService
+from backend.service.user_services import CustomerService
 from pathlib import Path
 import json
 

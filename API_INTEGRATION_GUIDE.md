@@ -73,7 +73,7 @@ When a user interacts with the system (e.g. adding a customer):
 ```python
 from fastapi import APIRouter, Depends, HTTPException, status
 from backend.repository.repositories import CustomerRepository
-from backend.service.UserServices.user_services import CustomerService
+from backend.service.user_services import CustomerService
 from backend.schemas.Users.User import Customer
 
 customer_repository = CustomerRepository()

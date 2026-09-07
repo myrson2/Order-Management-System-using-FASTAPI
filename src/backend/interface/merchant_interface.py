@@ -1,13 +1,15 @@
 import httpx
 
 from backend.schemas.Users import MerchantResponse
+from backend.schemas.Product import Product
+from pydantic import ValidationError
 
 
 class MerchantInterface:
     """Business logic for managing merchant transactions."""
     def __init__(self, current_merchant: MerchantResponse):
         self.current_merchant = current_merchant
-        self.url = "http://127.0.0.1:8000/api/v1/auth"
+        self.url = f"http://127.0.0.1:8000/api/v1/merchant/{current_merchant.id}"
 
     def __str__(self):
         return f"Hello {self.current_merchant.first_name} {self.current_merchant.last_name}"
@@ -62,6 +64,8 @@ def settings_menu() -> None:
     print("3. Back to Merchant Menu")
     print("=" * 40)
 
+def edit_profile_flow():
+    pass
 
 def handle_settings(current_merchant: MerchantResponse) -> bool:
     """
@@ -102,6 +106,63 @@ def handle_settings(current_merchant: MerchantResponse) -> bool:
             case _:
                 print("\n[ERROR] Invalid option. Please enter 1-3.")
 
+def add_product_flow(merchant: MerchantInterface) -> None:
+    """
+    Description / Purpose:
+        Interactive user input flow to collect product details, validate them
+        via the Product schema, and submit to the backend API.
+
+    Args / Parameters:
+        current_merchant (MerchantResponse): The active merchant session.
+
+    Returns:
+        None.
+    """
+    print("\n" + "=" * 40)
+    print("           ADD NEW PRODUCT              ")
+    print("=" * 40)
+
+    try:
+        product_name = input("Enter Product Name: ").strip()
+
+        unit_price_raw = input("Enter Unit Price (e.g., 29.99): ").strip()
+        try:
+            unit_price = float(unit_price_raw)
+        except ValueError:
+            print("\n[INPUT ERROR] Unit price must be a valid numeric value.")
+            return
+
+        stock_quantity_raw = input("Enter Stock Quantity (e.g., 100): ").strip()
+        try:
+            stock_quantity = int(stock_quantity_raw)
+        except ValueError:
+            print("\n[INPUT ERROR] Stock quantity must be a valid integer.")
+            return
+
+        # Instantiate Product schema to trigger field validators
+        product = Product(
+            merchant_id=merchant.current_merchant.id,
+            product_name=product_name,
+            unit_price=unit_price,
+            stock_quantity=stock_quantity
+        )
+
+        # Submit to merchant's scoped endpoint: POST /api/v1/merchant/{merchant_id}/products
+        url = f"{merchant.url}/products"
+        response = httpx.post(url, json=product.to_dict(), timeout=5.0)
+
+        if response.status_code in (200, 201):
+            print(f"\n[SUCCESS] Product '{product.product_name}' successfully added!")
+        else:
+            print(f"\n[API ERROR {response.status_code}]: {response.text}")
+
+    except ValidationError as e:
+        for err in e.errors():
+            field = " -> ".join(str(loc) for loc in err.get("loc", []))
+            print(f"\n[VALIDATION ERROR] {field}: {err.get('msg')}")
+    except httpx.RequestError as e:
+        print(f"\n[API ERROR] Could not connect to API server: {e}")
+
 
 def merchant_interface(current_merchant: MerchantResponse):
 
@@ -114,8 +175,7 @@ def merchant_interface(current_merchant: MerchantResponse):
 
         match choice:
             case "1":
-                print("\n[Action] Add Product selected.")
-                # add_product_flow()
+                add_product_flow(my_merchant)
             case "2":
                 print("\n[Action] Update Stock selected.")
                 # update_stock_flow()
