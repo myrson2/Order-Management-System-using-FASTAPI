@@ -13,7 +13,7 @@ The primary goal of this project is to learn and demonstrate core backend develo
 - **FastAPI Framework**: Defining RESTful API controllers, route handlers, and dependency injection.
 - **Pydantic v2 Schemas**: Utilizing type validation, custom field validators, schema mapping (`to_dict()`, `from_dict()`), and JSON mode serialization (`model_dump(mode='json')`).
 - **Layered Software Architecture**: Separating concerns into **Repository** (data access & JSON storage), **Service** (business logic & caching), **Controller** (HTTP routing & API validation), and **Schemas** (data validation models).
-- **Client-Server Decoupling**: Building a terminal-based CLI interface (`main_interface.py`) that acts as an independent HTTP client. `httpx` sends requests over the network (`http://127.0.0.1:8000/api/v1/customer`), and the **FastAPI web server** automatically routes and validates those network requests.
+- **Client-Server Decoupling**: Building a terminal-based CLI interface (`app_interface.py`) that acts as an independent HTTP client. `httpx` sends requests over the network (`http://127.0.0.1:8000/api/v1/customer`), and the **FastAPI web server** automatically routes and validates those network requests.
 - **Multithreaded Execution**: Running the Uvicorn web server in a background thread while concurrently launching an interactive CLI menu in `main.py`.
 
 > 📘 **For a detailed technical walkthrough of the HTTP API integration, see [`API_INTEGRATION_GUIDE.md`](file:///c:/Users/JoseMyrsonOBeros/Documents/Python/Mini%20Projects/Order%20Management%20System/backend/API_INTEGRATION_GUIDE.md)**
@@ -83,9 +83,9 @@ When dumping models containing complex types (like `uuid.UUID`), calling `model.
 Calling `model.model_dump(mode='json')` in `to_dict()` automatically converts non-standard JSON types into primitive JSON strings (`str`).
 
 ### 2. Client-Server Serialization & Validation Pipeline
-* **Client (`main_interface.py`)**: `Customer` object $\xrightarrow{\text{to\_dict()}}$ `dict` $\xrightarrow{\text{httpx}}$ JSON Text over HTTP.
-* **Server (`CustomerController.py`)**: JSON Text over HTTP $\xrightarrow{\text{customer: Customer}}$ Validated `Customer` object.
-* **Storage (`services.py` / `repositories.py`)**: `Customer` object $\xrightarrow{\text{to\_dict()}}$ `dict` $\xrightarrow{\text{json.dump()}}$ `customer.json`.
+* **Client (`app_interface.py`)**: `User.py` object $\xrightarrow{\text{to\_dict()}}$ `dict` $\xrightarrow{\text{httpx}}$ JSON Text over HTTP.
+* **Server (`CustomerController.py`)**: JSON Text over HTTP $\xrightarrow{\text{customer: Customer}}$ Validated `User.py` object.
+* **Storage (`user_service.py` / `repositories.py`)**: `User.py` object $\xrightarrow{\text{to\_dict()}}$ `dict` $\xrightarrow{\text{json.dump()}}$ `customer.json`.
 
 ### 3. String Type Rationale for Phone Numbers
 Phone numbers are defined as `str` (not `int`) because:
@@ -141,7 +141,7 @@ This will:
    ```
 2. **Run the CLI Client in a second terminal**:
    ```bash
-   python src/backend/interface/main_interface.py
+   python src/backend/interface/app_interface.py
    ```
 
 ---

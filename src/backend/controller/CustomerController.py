@@ -1,39 +1,76 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from backend.repository.repositories import CustomerRepository
-from backend.service.services import CustomerService
-from backend.schemas.Customer import CustomerCreate, CustomerUpdate, Customer
-from pathlib import Path
 
-target_path = Path(__file__).resolve().parent.parent / "database" / "customer.json"
-customer_repository = CustomerRepository(target_path)
-customer_service = CustomerService(customer_repository)
+from backend.dependencies import get_customer_service
+from backend.schemas.Users import Customer
+from backend.service.customer_service import CustomerService
 
-def get_customer_service() -> CustomerService:
-    return customer_service
+from backend.dependencies import AUTH_SERVICE_URL
 
-router = APIRouter(prefix="/api/v1/customer", tags=["Customer"])
+router = APIRouter(prefix=f"{AUTH_SERVICE_URL}/customer", tags=["Customer"])
 
 @router.get("/")
 def get_customers(service: CustomerService = Depends(get_customer_service)):
-    return service.get_customers()
+    """
+    Description / Purpose:
+        HTTP GET endpoint to retrieve the list of all registered customers.
+
+    Args / Parameters:
+        service (CustomerService): Injected CustomerService dependency.
+
+    Returns:
+        list[dict]: List of customer dictionaries.
+
+    Constraints / Notes:
+        Returns cached list of customers stored in memory / customer.json.
+    """
+    return service.get_all()
+
+@router.post("/", status_code=status.HTTP_201_CREATED)
+def create_customer(customer: Customer, service: CustomerService = Depends(get_customer_service)):
+    """
+    Description / Purpose:
+        HTTP POST endpoint to register and save a new customer.
+
+    Args / Parameters:
+        customer (Customer): Validated Pydantic Customer payload from HTTP request body.
+        service (CustomerService): Injected CustomerService dependency.
+
+    Returns:
+        None.
+
+    Constraints / Notes:
+        Validates request body against Customer schema and appends serialized dict to storage.
+    """
+    print(customer.model_dump())
+    service.add(customer.to_dict())
 
 @router.get("/{customer_id}")
-def get_customer_by_id(customer_id: int, service: CustomerService = Depends(get_customer_service)):
-    customer = service.get_customer_by_id(customer_id)
+def get_customer_by_id(customer_id: str, service: CustomerService = Depends(get_customer_service)):
+    """
+    Description / Purpose:
+        HTTP GET endpoint to retrieve a single customer by their unique ID string.
+
+    Args / Parameters:
+        customer_id (str): The customer ID string (UUID or legacy ID) from URL path parameter.
+        service (CustomerService): Injected CustomerService dependency.
+
+    Returns:
+        dict: The matching customer record.
+
+    Constraints / Notes:
+        Raises HTTP 404 Exception if no customer matching the given ID is found.
+    """
+    customer = service.get_user_by_id(customer_id)
     if not customer:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer not found")
     return customer
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
-def create_customer(customer: CustomerCreate, service: CustomerService = Depends(get_customer_service)):
-    service.add_customer(customer.to_dict())
-
-@router.patch("/{customer_id}", status_code=status.HTTP_200_OK)
-def edit_customer_account(customer_id: str, payload: CustomerUpdate, service: CustomerService = Depends(get_customer_service)):
-    update_data = service.update_customer(customer_id, payload)
-    if not update_data:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer not found")
-    return update_data
+# @router.patch("/{customer_id}", status_code=status.HTTP_200_OK)
+# def edit_customer_account(customer_id: str, payload: CustomerUpdate, service: CustomerService = Depends(get_customer_service)):
+#     update_data = service.update_customer(customer_id, payload)
+#     if not update_data:
+#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer not found")
+#     return update_data
 
 
 

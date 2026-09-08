@@ -1,26 +1,2 @@
-[
-    {
-        "id": "11f4ff45-8732-49a3-b7c8-04c93780cd5e",
-        "first_name": "Myrson",
-        "last_name": "Beros",
-        "email": "myrson@gmail.com",
-        "phone": "09064495279",
-        "password": "Myrson@1123"
-    },
-    {
-        "id": "c10f2e51-9075-4228-9dd1-7fa1a93dca10",
-        "first_name": "Daryll",
-        "last_name": "Lanic",
-        "email": "daryll@gmail.com",
-        "phone": "09064495279",
-        "password": "Daryll@1123"
-    },
-    {
-        "id": "03efbe31-398a-4690-9e57-9f0024617272",
-        "first_name": "Dylan",
-        "last_name": "Beros",
-        "email": "dylan1123@gmail.com",
-        "phone": "09064495279",
-        "password": "Dylan@1123"
-    }
-]
+{
+    "id": 
