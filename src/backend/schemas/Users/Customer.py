@@ -1,7 +1,6 @@
 from typing import Literal
-from backend.schemas.Users.User import EnumType, User, UserCreate, UserResponse
-from pydantic import Field, field_validator
-
+from backend.schemas.Users.User import EnumType, UserCreate, UserResponse
+from pydantic import Field
 
 class Customer(UserCreate):
     user_type: Literal[EnumType.CUSTOMER] = EnumType.CUSTOMER

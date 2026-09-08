@@ -96,9 +96,35 @@ class User(BaseModel):
         return self.model_dump(mode='json')
 
     def online(self) -> None:
+        """
+        Description / Purpose:
+            Mutates the user's active status state to ONLINE.
+
+        Args / Parameters:
+            None.
+
+        Returns:
+            None.
+
+        Constraints / Notes:
+            Directly updates self.active_status attribute using ActiveStatus.ONLINE enum.
+        """
         self.active_status = ActiveStatus.ONLINE
 
     def offline(self) -> None:
+        """
+        Description / Purpose:
+            Mutates the user's active status state to OFFLINE.
+
+        Args / Parameters:
+            None.
+
+        Returns:
+            None.
+
+        Constraints / Notes:
+            Directly updates self.active_status attribute using ActiveStatus.OFFLINE enum.
+        """
         self.active_status = ActiveStatus.OFFLINE
 
 
@@ -140,6 +166,19 @@ class UserLogin(BaseModel):
     password: str = Field(..., min_length=8, max_length=100)
 
     def to_dict(self) -> dict:
+        """
+        Description / Purpose:
+            Serializes UserLogin model attributes into a JSON-compatible dictionary.
+
+        Args / Parameters:
+            None.
+
+        Returns:
+            dict: Dictionary representation of login credentials.
+
+        Constraints / Notes:
+            Uses mode='json' serialization.
+        """
         return self.model_dump(mode="json")
 
 class UserResponse(BaseModel):
@@ -153,8 +192,34 @@ class UserResponse(BaseModel):
     created_at: datetime = Field(default_factory=datetime.now)
 
     @classmethod
-    def from_dict(cls, data: dict):
+    def from_dict(cls, data: dict) -> "UserResponse":
+        """
+        Description / Purpose:
+            Instantiates a UserResponse DTO instance from a dictionary payload.
+
+        Args / Parameters:
+            data (dict): Dictionary containing serialized user attributes.
+
+        Returns:
+            UserResponse: Initialized response model instance.
+
+        Constraints / Notes:
+            Unpacks keys as keyword arguments; raises ValidationError if required fields are missing.
+        """
         return cls(**data)
 
     def to_dict(self) -> dict:
+        """
+        Description / Purpose:
+            Serializes UserResponse model into a JSON-compatible dictionary.
+
+        Args / Parameters:
+            None.
+
+        Returns:
+            dict: JSON-safe dictionary containing public user attributes.
+
+        Constraints / Notes:
+            Serializes UUID and datetime objects into string representations.
+        """
         return self.model_dump(mode="json")

@@ -86,6 +86,9 @@ class Product(BaseModel):
 
         Returns:
             Product: Validated Product model instance.
+
+        Constraints / Notes:
+            Unpacks keys into model constructor; triggers all Pydantic field validators.
         """
         return cls(**data)
 
@@ -94,8 +97,14 @@ class Product(BaseModel):
         Description / Purpose:
             Serializes the Product model into a JSON-compatible dictionary.
 
+        Args / Parameters:
+            None.
+
         Returns:
             dict: Dictionary with UUIDs and complex types serialized as JSON strings.
+
+        Constraints / Notes:
+            Uses mode='json' to ensure output is safe for JSON file persistence and HTTP transmission.
         """
         return self.model_dump(mode="json")
 

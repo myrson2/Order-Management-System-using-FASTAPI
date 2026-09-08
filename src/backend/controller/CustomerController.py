@@ -1,37 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from backend.repository.repositories import CustomerRepository
+
+from backend.dependencies import get_customer_service
 from backend.schemas.Users import Customer
-from backend.service.user_services import CustomerService
-from pathlib import Path
-import json
+from backend.service.customer_service import CustomerService
 
-target_path = Path(__file__).resolve().parent.parent / "database"
-file_path = Path(target_path) / "customer.json"
+from backend.dependencies import AUTH_SERVICE_URL
 
-if not file_path.exists():
-    with open(file_path, "w", encoding="utf-8") as file:
-        json.dump([], file)
-
-customer_repository = CustomerRepository(file_path)
-customer_service = CustomerService(customer_repository)
-
-def get_customer_service() -> CustomerService:
-    """
-    Description / Purpose:
-        FastAPI dependency provider returning the singleton instance of CustomerService.
-
-    Args / Parameters:
-        None.
-
-    Returns:
-        CustomerService: Shared customer service instance.
-
-    Constraints / Notes:
-        Used with FastAPI Depends() dependency injection in controller routes.
-    """
-    return customer_service
-
-router = APIRouter(prefix="/api/v1/customer", tags=["Customer"])
+router = APIRouter(prefix=f"{AUTH_SERVICE_URL}/customer", tags=["Customer"])
 
 @router.get("/")
 def get_customers(service: CustomerService = Depends(get_customer_service)):
@@ -48,7 +23,7 @@ def get_customers(service: CustomerService = Depends(get_customer_service)):
     Constraints / Notes:
         Returns cached list of customers stored in memory / customer.json.
     """
-    return service.get_customers()
+    return service.get_all()
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def create_customer(customer: Customer, service: CustomerService = Depends(get_customer_service)):
@@ -67,7 +42,7 @@ def create_customer(customer: Customer, service: CustomerService = Depends(get_c
         Validates request body against Customer schema and appends serialized dict to storage.
     """
     print(customer.model_dump())
-    service.add_customer(customer.to_dict())
+    service.add(customer.to_dict())
 
 @router.get("/{customer_id}")
 def get_customer_by_id(customer_id: str, service: CustomerService = Depends(get_customer_service)):
@@ -85,7 +60,7 @@ def get_customer_by_id(customer_id: str, service: CustomerService = Depends(get_
     Constraints / Notes:
         Raises HTTP 404 Exception if no customer matching the given ID is found.
     """
-    customer = service.get_customer_by_id(customer_id)
+    customer = service.get_user_by_id(customer_id)
     if not customer:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer not found")
     return customer

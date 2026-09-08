@@ -7,14 +7,41 @@ from pydantic import ValidationError
 
 class MerchantInterface:
     """Business logic for managing merchant transactions."""
-    def __init__(self, current_merchant: MerchantResponse):
+    def __init__(self, current_merchant: MerchantResponse) -> None:
+        """
+        Description / Purpose:
+            Initializes MerchantInterface with the active merchant's session data
+            and constructs the scoped API URL for merchant routes.
+
+        Args / Parameters:
+            current_merchant (MerchantResponse): Currently authenticated merchant session object.
+
+        Returns:
+            None.
+
+        Constraints / Notes:
+            Scopes self.url to http://127.0.0.1:8000/api/v1/merchant/{merchant_id}.
+        """
         self.current_merchant = current_merchant
         self.url = f"http://127.0.0.1:8000/api/v1/merchant/{current_merchant.id}"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Hello {self.current_merchant.first_name} {self.current_merchant.last_name}"
 
-    def welcome_message(self):
+    def welcome_message(self) -> str:
+        """
+        Description / Purpose:
+            Formats and returns a welcome banner string with merchant name and email.
+
+        Args / Parameters:
+            None.
+
+        Returns:
+            str: Formatted welcome message string.
+
+        Constraints / Notes:
+            Reads directly from self.current_merchant attributes.
+        """
         return f"\nLogged in as: {self.current_merchant.first_name} {self.current_merchant.last_name} ({self.current_merchant.email})"
 
 def merchant_menu() -> None:
@@ -64,19 +91,35 @@ def settings_menu() -> None:
     print("3. Back to Merchant Menu")
     print("=" * 40)
 
-def edit_profile_flow():
+def edit_profile_flow() -> None:
+    """
+    Description / Purpose:
+        Interactive CLI flow allowing a merchant to update their profile details.
+
+    Args / Parameters:
+        None.
+
+    Returns:
+        None.
+
+    Constraints / Notes:
+        Feature stub awaiting profile update endpoint wiring.
+    """
     pass
 
 def handle_settings(current_merchant: MerchantResponse) -> bool:
     """
     Description / Purpose:
-        Controls the interactive settings loop for the merchant.
+        Controls the interactive settings loop for the merchant, handling profile edits and logout.
 
     Args / Parameters:
-        current_merchant (MerchantResponse): Currently authenticated merchant.
+        current_merchant (MerchantResponse): Currently authenticated merchant session.
 
     Returns:
-        bool: True if the user selected logout, False to return to merchant menu.
+        bool: True if the merchant logged out successfully, False to return to merchant menu.
+
+    Constraints / Notes:
+        Sends HTTP POST to /api/v1/auth/logout via httpx and handles network exceptions.
     """
     while True:
         settings_menu()
@@ -113,10 +156,13 @@ def add_product_flow(merchant: MerchantInterface) -> None:
         via the Product schema, and submit to the backend API.
 
     Args / Parameters:
-        current_merchant (MerchantResponse): The active merchant session.
+        merchant (MerchantInterface): The active merchant interface instance containing session and URL.
 
     Returns:
         None.
+
+    Constraints / Notes:
+        Catches ValidationError from Pydantic and RequestError from httpx to prevent CLI crashes.
     """
     print("\n" + "=" * 40)
     print("           ADD NEW PRODUCT              ")
@@ -164,8 +210,20 @@ def add_product_flow(merchant: MerchantInterface) -> None:
         print(f"\n[API ERROR] Could not connect to API server: {e}")
 
 
-def merchant_interface(current_merchant: MerchantResponse):
+def merchant_interface(current_merchant: MerchantResponse) -> None:
+    """
+    Description / Purpose:
+        Main CLI loop controlling merchant operations including inventory management and settings.
 
+    Args / Parameters:
+        current_merchant (MerchantResponse): Currently authenticated merchant session object.
+
+    Returns:
+        None.
+
+    Constraints / Notes:
+        Exits loop and terminates session when settings logout returns True.
+    """
     my_merchant = MerchantInterface(current_merchant)
     print(my_merchant.welcome_message())
 
