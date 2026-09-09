@@ -1,7 +1,7 @@
 import httpx
 
 from backend.schemas.Users import MerchantResponse
-from backend.schemas.Product import Product
+from backend.schemas.Product import ProductCreate
 from pydantic import ValidationError
 
 
@@ -23,7 +23,7 @@ class MerchantInterface:
             Scopes self.url to http://127.0.0.1:8000/api/v1/merchant/{merchant_id}.
         """
         self.current_merchant = current_merchant
-        self.url = f"http://127.0.0.1:8000/api/v1/merchant/{current_merchant.id}"
+        self.url = f"http://127.0.0.1:8001/api/v1/merchant/{current_merchant.id}"
 
     def __str__(self) -> str:
         return f"Hello {self.current_merchant.first_name} {self.current_merchant.last_name}"
@@ -67,7 +67,6 @@ def merchant_menu() -> None:
     print("4. Delete Stock")
     print("5. Settings")
     print("=" * 40)
-
 
 def settings_menu() -> None:
     """
@@ -131,7 +130,7 @@ def handle_settings(current_merchant: MerchantResponse) -> bool:
                 # edit_profile_flow(current_merchant)
             case "2":
                 try:
-                    response = httpx.post("http://127.0.0.1:8000/api/v1/auth/logout",
+                    response = httpx.post("http://127.0.0.1:8001/api/v1/auth/logout",
                                           json=current_merchant.model_dump(mode='json'))
                     print(f"\n[LOGOUT] Logging out {current_merchant.first_name} {current_merchant.last_name}...")
 
@@ -186,7 +185,7 @@ def add_product_flow(merchant: MerchantInterface) -> None:
             return
 
         # Instantiate Product schema to trigger field validators
-        product = Product(
+        product = ProductCreate(
             merchant_id=merchant.current_merchant.id,
             product_name=product_name,
             unit_price=unit_price,

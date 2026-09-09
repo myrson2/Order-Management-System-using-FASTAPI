@@ -8,7 +8,7 @@ from backend.schemas.Users import MerchantResponse
 
 load_dotenv()
 
-API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000/api/v1")
+API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8001/api/v1")
 CUSTOMER_URL = f"{API_BASE_URL}/customer"
 MERCHANT_URL = f"{API_BASE_URL}/merchant"
 ORDER_URL = f"{API_BASE_URL}/order"
@@ -93,7 +93,7 @@ def main_interface() -> None:
                 return None
 
             if isinstance(current_user, MerchantResponse):
-                current_user = merchant_interface.merchant_interface(current_user)
+                merchant_interface.merchant_interface(current_user)
             else:
                 print("NOPE ITS NOT")
 

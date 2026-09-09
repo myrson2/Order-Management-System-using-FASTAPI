@@ -46,7 +46,7 @@ class CustomerRepository(Repository):
         """
         Description / Purpose:
             Initializes CustomerRepository with a specific JSON file path.
-
+`
         Args / Parameters:
             file_path (Path): Path to customer.json storage file.
 
@@ -158,56 +158,101 @@ class MerchantRepository(Repository):
                 return load_file
         except json.JSONDecodeError:
             return []
-    
-class OrderRepository(Repository): 
-    """Handles in-memory storage of order data records."""
 
-    def __init__(self) -> None: 
+class ProductRepository(Repository):
+    """Handles persistent reading and writing of product JSON data."""
+    def __init__(self, file_path: Path) -> None:
+        self.file_path = file_path
+
+    def save_repo(self, data: list[dict]) -> None:
         """
         Description / Purpose:
-            Initializes OrderRepository with an empty in-memory list.
+            Writes merchant data records into the merchant.json file.
 
         Args / Parameters:
-            None.
+            data (list[dict]): List of merchant dictionaries to save.
 
         Returns:
             None.
 
         Constraints / Notes:
-            Temporary in-memory storage before database integration.
+            Creates parent directories automatically if missing.
         """
-        self.order_repos: list[dict] = []
-    
-    def save_repo(self, order_data: dict):
+        self.file_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(self.file_path, "w", encoding="utf-8") as file:
+            json.dump(data, file, indent=4)
+
+    def load_repo(self) -> list[dict]:
         """
         Description / Purpose:
-            Appends an order dictionary record to the in-memory repository list.
-
-        Args / Parameters:
-            order_data (dict): Order dictionary payload to save.
-
-        Returns:
-            dict: The saved order dictionary.
-
-        Constraints / Notes:
-            Appends directly to self.order_repos.
-        """
-        self.order_repos.append(order_data)
-        return order_data
-    
-    def load_repo(self) -> list[dict]: 
-        """
-        Description / Purpose:
-            Retrieves all order records stored in memory.
+            Reads and parses merchant data records from the merchant.json file.
 
         Args / Parameters:
             None.
 
         Returns:
-            list[dict]: List of all order dictionaries.
+            list[dict]: List of merchant dictionaries (or empty list if file missing/corrupt).
 
         Constraints / Notes:
-            Returns in-memory list self.order_repos.
+            Catches JSONDecodeError and returns an empty list if syntax is invalid.
         """
-        return self.order_repos 
+        try:
+            if not self.file_path.exists():
+                return []
+            with open(self.file_path, "r", encoding="utf-8") as json_file:
+                load_file = json.load(json_file)
+                return load_file
+        except json.JSONDecodeError:
+            return []
+# class OrderRepository(Repository):
+#     """Handles in-memory storage of order data records."""
+#
+#     def __init__(self) -> None:
+#         """
+#         Description / Purpose:
+#             Initializes OrderRepository with an empty in-memory list.
+#
+#         Args / Parameters:
+#             None.
+#
+#         Returns:
+#             None.
+#
+#         Constraints / Notes:
+#             Temporary in-memory storage before database integration.
+#         """
+#         self.order_repos: list[dict] = []
+#
+#     def save_repo(self, order_data: dict):
+#         """
+#         Description / Purpose:
+#             Appends an order dictionary record to the in-memory repository list.
+#
+#         Args / Parameters:
+#             order_data (dict): Order dictionary payload to save.
+#
+#         Returns:
+#             dict: The saved order dictionary.
+#
+#         Constraints / Notes:
+#             Appends directly to self.order_repos.
+#         """
+#         self.order_repos.append(order_data)
+#         return order_data
+#
+#     def load_repo(self) -> list[dict]:
+#         """
+#         Description / Purpose:
+#             Retrieves all order records stored in memory.
+#
+#         Args / Parameters:
+#             None.
+#
+#         Returns:
+#             list[dict]: List of all order dictionaries.
+#
+#         Constraints / Notes:
+#             Returns in-memory list self.order_repos.
+#         """
+#         return self.order_repos
 

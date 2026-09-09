@@ -4,6 +4,41 @@ from uuid import UUID, uuid4
 
 class Product(BaseModel):
     id: UUID = Field(default_factory=uuid4)
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "Product":
+        """
+        Description / Purpose:
+            Instantiates a Product model from a dictionary payload.
+
+        Args / Parameters:
+            data (dict): Dictionary containing product attributes.
+
+        Returns:
+            Product: Validated Product model instance.
+
+        Constraints / Notes:
+            Unpacks keys into model constructor; triggers all Pydantic field validators.
+        """
+        return cls(**data)
+
+    def to_dict(self) -> dict:
+        """
+        Description / Purpose:
+            Serializes the Product model into a JSON-compatible dictionary.
+
+        Args / Parameters:
+            None.
+
+        Returns:
+            dict: Dictionary with UUIDs and complex types serialized as JSON strings.
+
+        Constraints / Notes:
+            Uses mode='json' to ensure output is safe for JSON file persistence and HTTP transmission.
+        """
+        return self.model_dump(mode="json")
+
+class ProductCreate(Product):
     merchant_id: UUID
     stock_quantity: int = Field(..., ge=0, strict=True)
     unit_price: float = Field(..., strict=True)
@@ -75,39 +110,7 @@ class Product(BaseModel):
             raise ValueError("Stock quantity exceeds maximum allowed inventory limit (1,000,000).")
         return value
 
-    @classmethod
-    def from_dict(cls, data: dict) -> "Product":
-        """
-        Description / Purpose:
-            Instantiates a Product model from a dictionary payload.
-
-        Args / Parameters:
-            data (dict): Dictionary containing product attributes.
-
-        Returns:
-            Product: Validated Product model instance.
-
-        Constraints / Notes:
-            Unpacks keys into model constructor; triggers all Pydantic field validators.
-        """
-        return cls(**data)
-
-    def to_dict(self) -> dict:
-        """
-        Description / Purpose:
-            Serializes the Product model into a JSON-compatible dictionary.
-
-        Args / Parameters:
-            None.
-
-        Returns:
-            dict: Dictionary with UUIDs and complex types serialized as JSON strings.
-
-        Constraints / Notes:
-            Uses mode='json' to ensure output is safe for JSON file persistence and HTTP transmission.
-        """
-        return self.model_dump(mode="json")
-
-
+class ProductResponse(Product):
+    pass
 
 

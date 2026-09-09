@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, status
 
-from backend.dependencies import get_merchant_service, AUTH_SERVICE_URL
+from backend.dependencies import get_merchant_service, AUTH_SERVICE_URL, get_base_url
+from backend.schemas.Product import ProductCreate, ProductResponse
 from backend.schemas.Users import Merchant
 from backend.service.merchant_services import MerchantService
 
-router = APIRouter(prefix=f"{AUTH_SERVICE_URL}/merchant", tags=["Merchant"])
+router = APIRouter(prefix=f"{get_base_url}/merchant", tags=["Merchant"])
 
 @router.get("/")
 def get_users(service: MerchantService = Depends(get_merchant_service)):
@@ -43,7 +44,7 @@ def create_merchant(merchant: Merchant, service: MerchantService = Depends(get_m
     service.add(merchant.to_dict())
 
 @router.post("/{merchant_id}/products", status_code=status.HTTP_200_OK)
-def create_a_product(merchant_id: str, service: MerchantService = Depends(get_merchant_service)):
+def create_a_product(merchant_id: str, product: ProductCreate, service: MerchantService = Depends(get_merchant_service)):
     """
     Description / Purpose:
         HTTP POST endpoint to add a new product under a specific merchant's catalog.
@@ -58,4 +59,4 @@ def create_a_product(merchant_id: str, service: MerchantService = Depends(get_me
     Constraints / Notes:
         Route stub awaiting inventory processing implementation.
     """
-    pass
+    service.add_product(product)
