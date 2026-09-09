@@ -1,7 +1,9 @@
+import json
+
 import httpx
 
 from backend.schemas.Users import MerchantResponse
-from backend.schemas.Product import ProductCreate
+from backend.schemas.Product import ProductCreate, ProductResponse
 from pydantic import ValidationError
 
 
@@ -23,9 +25,23 @@ class MerchantInterface:
             Scopes self.url to http://127.0.0.1:8000/api/v1/merchant/{merchant_id}.
         """
         self.current_merchant = current_merchant
+        self.base_url = "http://127.0.0.1:8001/api/v1/merchant"
         self.url = f"http://127.0.0.1:8001/api/v1/merchant/{current_merchant.id}"
 
     def __str__(self) -> str:
+        """
+        Description / Purpose:
+            Returns a friendly informal greeting string identifying the merchant by full name.
+
+        Args / Parameters:
+            None.
+
+        Returns:
+            str: Greeting string including merchant's first and last name.
+
+        Constraints / Notes:
+            Reads attributes directly from self.current_merchant.
+        """
         return f"Hello {self.current_merchant.first_name} {self.current_merchant.last_name}"
 
     def welcome_message(self) -> str:
@@ -208,6 +224,67 @@ def add_product_flow(merchant: MerchantInterface) -> None:
     except httpx.RequestError as e:
         print(f"\n[API ERROR] Could not connect to API server: {e}")
 
+def display_all_products(merchant: MerchantInterface) -> list[dict]:
+    """
+    Description / Purpose:
+        Fetches the complete catalog of products from the backend API.
+
+    Args / Parameters:
+        merchant (MerchantInterface): The active merchant interface instance containing base URL info.
+
+    Returns:
+        list[dict]: List of product dictionaries retrieved from the API, or empty list on network error.
+
+    Constraints / Notes:
+        Handles httpx.RequestError gracefully if backend connection fails.
+    """
+    try:
+        response = httpx.get(f"{merchant.base_url}/products", timeout=5.0)
+        if response.status_code == 200:
+            return response.json()
+        print(f"\n[API ERROR {response.status_code}]: {response.text}")
+        return []
+    except httpx.RequestError as e:
+        print(f"\n[API ERROR] Could not connect to API server: {e}")
+        return []
+
+def delete_stock_flow(product_id: str, merchant: MerchantInterface, all_products: list | None = None) -> None:
+    """
+    Description / Purpose:
+        Sends an HTTP DELETE request to remove a specific product from the merchant's catalog.
+
+    Args / Parameters:
+        product_id (str): The unique identifier of the product to delete.
+        merchant (MerchantInterface): The active merchant interface containing session and URL configurations.
+        all_products (list | None): Optional cached list of current products.
+
+    Returns:
+        None.
+
+    Constraints / Notes:
+        Handles httpx.RequestError for network failures and checks HTTP status codes
+        (200/204 for success, 404 for missing items, and other unexpected status codes).
+    """
+    try:
+        response = httpx.delete(f"{merchant.url}/products/{product_id}", timeout=5.0)
+
+        if response.status_code == 200:
+            # 1. Parse the JSON body from the HTTP response
+            payload = response.json()
+
+            # 2. Feed it into your Pydantic schema!
+            deleted_product = ProductResponse(**payload)
+
+            # 3. Now you have full access to typed attributes!
+            print(f"\n[SUCCESS] Product '{deleted_product.product_name}' (ID: {product_id}) was successfully deleted.")
+
+        elif response.status_code == 404:
+            print(f"\n[NOT FOUND] No product matches ID '{product_id}'. Please verify the ID and try again.")
+        else:
+            print(f"\n[API ERROR {response.status_code}]: {response.text}")
+
+    except httpx.RequestError as e:
+        print(f"\n[API ERROR] Could not connect to API server: {e}")
 
 def merchant_interface(current_merchant: MerchantResponse) -> None:
     """
@@ -241,7 +318,10 @@ def merchant_interface(current_merchant: MerchantResponse) -> None:
                 # edit_stock_flow()
             case "4":
                 print("\n[Action] Delete Stock selected.")
-                # delete_stock_flow()
+                all_products = display_all_products(my_merchant)
+                print(all_products)
+                delete_product_id = input("Enter Product ID: ").strip()
+                delete_stock_flow(delete_product_id, my_merchant, all_products)
             case "5":
                 should_logout = handle_settings(current_merchant)
                 if should_logout:

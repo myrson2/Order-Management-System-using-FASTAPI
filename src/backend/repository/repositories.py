@@ -162,6 +162,19 @@ class MerchantRepository(Repository):
 class ProductRepository(Repository):
     """Handles persistent reading and writing of product JSON data."""
     def __init__(self, file_path: Path) -> None:
+        """
+        Description / Purpose:
+            Initializes the ProductRepository with the target JSON file storage path.
+
+        Args / Parameters:
+            file_path (Path): Pathlib Path pointing to product.json.
+
+        Returns:
+            None.
+
+        Constraints / Notes:
+            Stores target path reference for file-based JSON persistence operations.
+        """
         self.file_path = file_path
 
     def save_repo(self, data: list[dict]) -> None:

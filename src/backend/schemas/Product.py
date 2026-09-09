@@ -1,9 +1,25 @@
+import backend.utilities as utils
 from pydantic import BaseModel, Field, field_validator
 from uuid import UUID, uuid4
 
+def generate_id() -> str:
+    """
+    Description / Purpose:
+        Generates a formatted unique product identifier string with a 'PRD-' prefix.
+
+    Args / Parameters:
+        None.
+
+    Returns:
+        str: Formatted product ID string (e.g., 'PRD-5439').
+
+    Constraints / Notes:
+        Delegates random numerical generation to backend.utilities.generate_product_id.
+    """
+    return f"PRD-{utils.generate_product_id()}"
 
 class Product(BaseModel):
-    id: UUID = Field(default_factory=uuid4)
+    id: str = Field(default_factory=generate_id)
 
     @classmethod
     def from_dict(cls, data: dict) -> "Product":
@@ -110,7 +126,7 @@ class ProductCreate(Product):
             raise ValueError("Stock quantity exceeds maximum allowed inventory limit (1,000,000).")
         return value
 
-class ProductResponse(Product):
-    pass
+class ProductResponse(BaseModel):
+    product_name: str = Field(..., min_length=1, max_length=50, strict=True)
 
 
