@@ -1,7 +1,4 @@
-import json
-
 import httpx
-
 from backend.schemas.Users import MerchantResponse
 from backend.schemas.Product import ProductCreate, ProductResponse
 from pydantic import ValidationError
@@ -103,6 +100,28 @@ def settings_menu() -> None:
     print("=" * 40)
     print("1. Edit User Profile")
     print("2. Logout")
+    print("3. Back to Merchant Menu")
+    print("=" * 40)
+
+def update_stock_menu() -> None:
+    """
+    Description / Purpose:
+        Displays the stock management submenu options (Deduct Stock, Restock).
+
+    Args / Parameters:
+        None.
+
+    Returns:
+        None.
+
+    Constraints / Notes:
+        Prints formatted ASCII menu options to the terminal console.
+    """
+    print("\n" + "=" * 40)
+    print("          UPDATE STOCK MENU             ")
+    print("=" * 40)
+    print("1. Deduct Stock")
+    print("2. Restock")
     print("3. Back to Merchant Menu")
     print("=" * 40)
 
@@ -248,7 +267,7 @@ def display_all_products(merchant: MerchantInterface) -> list[dict]:
         print(f"\n[API ERROR] Could not connect to API server: {e}")
         return []
 
-def delete_stock_flow(product_id: str, merchant: MerchantInterface, all_products: list | None = None) -> None:
+def delete_stock_flow(product_id: str, merchant: MerchantInterface) -> None:
     """
     Description / Purpose:
         Sends an HTTP DELETE request to remove a specific product from the merchant's catalog.
@@ -286,6 +305,38 @@ def delete_stock_flow(product_id: str, merchant: MerchantInterface, all_products
     except httpx.RequestError as e:
         print(f"\n[API ERROR] Could not connect to API server: {e}")
 
+def update_stock_flow(merchant: MerchantInterface, product_data: ProductResponse) -> None:
+    """
+    Description / Purpose:
+        Controls the interactive stock adjustment loop for deducting or replenishing inventory.
+
+    Args / Parameters:
+        merchant (MerchantInterface): The active merchant interface session object.
+
+    Returns:
+        None.
+
+    Constraints / Notes:
+        Loops until the merchant selects the option to return to the main menu.
+    """
+    while True:
+        print(f"Product: {product_data.product_name}")
+        update_stock_menu()
+        choice = input("Select an option (1-3): ").strip()
+
+        match choice:
+            case "1":
+                print("\n[Action] Deduct Stock selected.")
+                # deduct_stock_flow(merchant)
+            case "2":
+                print("\n[Action] Restock selected.")
+                # restock_flow(merchant)
+            case "3":
+                print("\nReturning to Merchant Menu...")
+                break
+            case _:
+                print("\n[ERROR] Invalid option. Please select 1-3.")
+
 def merchant_interface(current_merchant: MerchantResponse) -> None:
     """
     Description / Purpose:
@@ -311,8 +362,25 @@ def merchant_interface(current_merchant: MerchantResponse) -> None:
             case "1":
                 add_product_flow(my_merchant)
             case "2":
-                print("\n[Action] Update Stock selected.")
-                # update_stock_flow()
+                try:
+                    all_products = display_all_products(my_merchant)
+                    if not all_products:
+                        continue
+
+                    print(all_products)
+                    select_product = input("Enter Product ID: ").strip()
+
+                    response = httpx.get(f"{my_merchant.url}/products/{select_product}", timeout=5.0)
+
+                    if response.status_code == 200:
+                       payload = response.json()
+                       update_stock_flow(my_merchant, ProductResponse(**payload))
+                    elif response.status_code == 404:
+                        error_detail = response.json().get("detail", "Product not found.")
+                        print(f"\n[NOT FOUND] {error_detail}")
+
+                except httpx.RequestError as e:
+                   print(f"\n[ERROR] Could not connect to API server: {e}")
             case "3":
                 print("\n[Action] Edit Stock selected.")
                 # edit_stock_flow()
@@ -321,7 +389,7 @@ def merchant_interface(current_merchant: MerchantResponse) -> None:
                 all_products = display_all_products(my_merchant)
                 print(all_products)
                 delete_product_id = input("Enter Product ID: ").strip()
-                delete_stock_flow(delete_product_id, my_merchant, all_products)
+                delete_stock_flow(delete_product_id, my_merchant)
             case "5":
                 should_logout = handle_settings(current_merchant)
                 if should_logout:

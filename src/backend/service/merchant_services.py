@@ -115,3 +115,22 @@ class MerchantService(UserService):
                 self.save_product_cache()
                 return ProductResponse(**deleted)
         return None
+
+    def get_product_by_id(self, product_id: str) -> dict | None:
+        """
+        Description / Purpose:
+            Searches the in-memory product cache for a product matching the given ID.
+
+        Args / Parameters:
+            product_id (str): Unique product identifier string to look up.
+
+        Returns:
+            dict | None: The matching product dictionary if found, or None.
+
+        Constraints / Notes:
+            Scans product_cache linearly by key 'id'.
+        """
+        for index, products in enumerate(self.product_cache):
+            if products.get('id') == product_id:
+                return products
+        return None

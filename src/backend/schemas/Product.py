@@ -128,5 +128,7 @@ class ProductCreate(Product):
 
 class ProductResponse(BaseModel):
     product_name: str = Field(..., min_length=1, max_length=50, strict=True)
+    stock_quantity: int = Field(..., ge=0, strict=True)
+    unit_price: float = Field(..., strict=True)
 
 

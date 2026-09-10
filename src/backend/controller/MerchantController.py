@@ -1,8 +1,9 @@
+from itertools import product
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from backend.dependencies import get_merchant_service, AUTH_SERVICE_URL, get_base_url
+from backend.dependencies import get_merchant_service, get_base_url
 from backend.schemas.Product import ProductCreate, ProductResponse
 from backend.schemas.Users import Merchant
 from backend.service.merchant_services import MerchantService
@@ -64,7 +65,7 @@ def create_a_product(merchant_id: str, product: ProductCreate, service: Merchant
     service.add_product(product)
 
 @router.get("/products", status_code=status.HTTP_200_OK)
-def get_all_products(service: MerchantService = Depends(get_merchant_service)) -> list[Any]:
+def get_all_products(service: MerchantService = Depends(get_merchant_service)) -> list[dict]:
     """
     Description / Purpose:
         HTTP GET endpoint to retrieve the full catalog of products across all merchants.
@@ -80,7 +81,10 @@ def get_all_products(service: MerchantService = Depends(get_merchant_service)) -
     """
     all_products = service.get_all_products()
     if len(all_products) == 0:
-        return []
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Empty list of products."
+        )
     return all_products
 
 @router.delete("/{merchant_id}/products/{product_id}", status_code=status.HTTP_200_OK)
@@ -111,3 +115,32 @@ def delete_a_product(
             detail=f"No product matches ID '{product_id}'."
         )
     return del_product
+
+@router.get("/{merchant_id}/products/{product_id}", status_code=status.HTTP_200_OK)
+def get_a_product_using_id(
+    merchant_id: str,
+    product_id: str,
+    service: MerchantService = Depends(get_merchant_service)
+):
+    """
+    Description / Purpose:
+        HTTP GET endpoint to retrieve details of a specific product by its ID under a merchant catalog.
+
+    Args / Parameters:
+        merchant_id (str): Unique merchant UUID string from URL path parameter.
+        product_id (str): Unique product ID string from URL path parameter.
+        service (MerchantService): Injected MerchantService singleton dependency.
+
+    Returns:
+        dict: Product record dictionary matching the provided ID.
+
+    Constraints / Notes:
+        Raises HTTP 404 HTTPException if the product ID does not exist in storage.
+    """
+    that_product = service.get_product_by_id(product_id)
+    if not that_product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No product matches ID '{product_id}'."
+        )
+    return that_product
