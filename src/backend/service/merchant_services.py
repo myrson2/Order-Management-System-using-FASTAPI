@@ -1,5 +1,5 @@
 from backend.repository.repositories import ProductRepository
-from backend.schemas.Product import ProductCreate, ProductResponse
+from backend.schemas.Product import ProductCreate, ProductResponse, ProductUpdate
 from backend.service.user_service import UserService
 
 class MerchantService(UserService):
@@ -134,3 +134,26 @@ class MerchantService(UserService):
             if products.get('id') == product_id:
                 return products
         return None
+
+    def update_product(self, product_id: str, product_update: ProductUpdate) -> dict | None:
+        """
+        Description / Purpose:
+            Updates product fields (such as stock level) in the cache and persists the change to storage.
+
+        Args / Parameters:
+            product_id (str): Unique product identifier string to restock.
+            product_update (ProductUpdate): Validated partial product update schema.
+
+        Returns:
+            dict | None: The updated product dictionary if found and updated, or None.
+
+        Constraints / Notes:
+            Uses exclude_unset=True to only update attributes that were explicitly provided.
+        """
+        get_product = self.get_product_by_id(product_id)
+        if get_product is None:
+            return None
+
+        get_product.update(product_update.model_dump(exclude_unset=True))
+        self.save_product_cache()
+        return get_product

@@ -127,8 +127,15 @@ class ProductCreate(Product):
         return value
 
 class ProductResponse(BaseModel):
+    id: str
     product_name: str = Field(..., min_length=1, max_length=50, strict=True)
     stock_quantity: int = Field(..., ge=0, strict=True)
     unit_price: float = Field(..., strict=True)
+
+class ProductUpdate(BaseModel):
+    product_name: str | None = None
+    stock_quantity: int | None = None
+    unit_price: float | None = None
+
 
 
