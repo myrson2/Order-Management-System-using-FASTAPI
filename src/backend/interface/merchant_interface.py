@@ -1,7 +1,8 @@
 import httpx
 from backend.schemas.Users import MerchantResponse
-from backend.schemas.Product import ProductCreate, ProductResponse, ProductUpdate
+from backend.schemas.Product import ProductCreate, ProductResponse, ProductUpdate, Product
 from pydantic import ValidationError
+from typing import Literal
 
 
 class MerchantInterface:
@@ -232,7 +233,8 @@ def add_product_flow(merchant: MerchantInterface) -> None:
         response = httpx.post(url, json=product.to_dict(), timeout=5.0)
 
         if response.status_code in (200, 201):
-            print(f"\n[SUCCESS] Product '{product.product_name}' successfully added!")
+            created_data = ProductResponse(**response.json())
+            print(f"\n[SUCCESS] Product '{created_data.product_name}' (ID: {created_data.id}) successfully added!")
         else:
             print(f"\n[API ERROR {response.status_code}]: {response.text}")
 
@@ -243,10 +245,41 @@ def add_product_flow(merchant: MerchantInterface) -> None:
     except httpx.RequestError as e:
         print(f"\n[API ERROR] Could not connect to API server: {e}")
 
+def print_product_table(products: list[dict]) -> None:
+    """
+    Description / Purpose:
+        Renders a list of product records in a formatted ASCII table with '|' column borders.
+
+    Args / Parameters:
+        products (list[dict]): Collection of product dictionaries to format and display.
+
+    Returns:
+        None.
+
+    Constraints / Notes:
+        Handles empty collections gracefully and truncates product names longer than 25 characters.
+    """
+    if not products:
+        print("\n[INFO] No products found in the catalog.")
+        return
+
+    separator = "-" * 75
+    print("\n" + separator)
+    print(f"| {'ID':<12} | {'Product Name':<25} | {'Unit Price':<12} | {'Stock':<10} |")
+    print(separator)
+    for p in products:
+        p_id = str(p.get("id", "N/A"))
+        name = str(p.get("product_name", "N/A"))[:25]
+        price = f"${float(p.get('unit_price', 0.0)):.2f}"
+        stock = str(p.get("stock_quantity", 0))
+        print(f"| {p_id:<12} | {name:<25} | {price:<12} | {stock:<10} |")
+    print(separator + "\n")
+
 def display_all_products(merchant: MerchantInterface) -> list[dict]:
     """
     Description / Purpose:
-        Fetches the complete catalog of products from the backend API.
+        Fetches the complete catalog of products from the backend API
+        and renders them in a formatted table with '|' column separators.
 
     Args / Parameters:
         merchant (MerchantInterface): The active merchant interface instance containing base URL info.
@@ -260,14 +293,16 @@ def display_all_products(merchant: MerchantInterface) -> list[dict]:
     try:
         response = httpx.get(f"{merchant.base_url}/products", timeout=5.0)
         if response.status_code == 200:
-            return response.json()
+            products = response.json()
+            print_product_table(products)
+            return products
         print(f"\n[API ERROR {response.status_code}]: {response.text}")
         return []
     except httpx.RequestError as e:
         print(f"\n[API ERROR] Could not connect to API server: {e}")
         return []
 
-def delete_stock_flow(product_id: str, merchant: MerchantInterface) -> None:
+def delete_stock_flow(product_id: str, merchant: MerchantInterface) -> ProductResponse | None:
     """
     Description / Purpose:
         Sends an HTTP DELETE request to remove a specific product from the merchant's catalog.
@@ -305,49 +340,59 @@ def delete_stock_flow(product_id: str, merchant: MerchantInterface) -> None:
     except httpx.RequestError as e:
         print(f"\n[API ERROR] Could not connect to API server: {e}")
 
-
-def restock_flow(merchant: MerchantInterface, additions: int, product_data: ProductResponse) -> None:
+def adjust_stock_flow(
+    merchant: MerchantInterface,
+    quantity: int,
+    product_data: ProductResponse,
+    action: Literal["restock", "deduct"]
+) -> None:
     """
     Description / Purpose:
-        Computes updated stock level, validates via ProductUpdate schema, and transmits
-        a PATCH request to restock the target product on the backend API.
+        Calculates updated stock level based on action type, validates inputs,
+        and transmits a PATCH request to update the product stock on the backend.
 
     Args / Parameters:
         merchant (MerchantInterface): The active merchant session containing URL configurations.
-        additions (int): Quantity of items to add to current inventory stock.
+        quantity (int): Number of units to add or subtract.
         product_data (ProductResponse): The current product schema model instance.
+        action (Literal["restock", "deduct"]): Direction of inventory adjustment.
 
     Returns:
         None.
-
-    Constraints / Notes:
-        Validates additions > 0 and sends exclude_unset=True payload via httpx.patch.
     """
+    # 1. Validate numeric input
     try:
-        amount = int(additions)
+        amount = int(quantity)
         if amount <= 0:
-            print("\n[INPUT ERROR] Restock amount must be greater than zero.")
+            print(f"\n[INPUT ERROR] {action.capitalize()} quantity must be greater than zero.")
             return
     except ValueError:
         print("\n[INPUT ERROR] Please enter a valid whole number.")
         return
 
-    # 2. Perform calculation
-    added_stock = product_data.stock_quantity + amount
+    # 2. Compute new stock level and target endpoint
+    if action == "restock":
+        new_stock = product_data.stock_quantity + amount
+    elif action == "deduct":
+        if amount > product_data.stock_quantity:
+            print(f"\n[INPUT ERROR] Cannot deduct {amount}. Available stock is only {product_data.stock_quantity}.")
+            return
+        new_stock = product_data.stock_quantity - amount
+    else:
+        print(f"\n[ERROR] Unsupported action '{action}'. Must be 'restock' or 'deduct'.")
+        return
 
-    # 3. Create update schema & exclude unset fields
-    update_data = ProductUpdate(stock_quantity=added_stock)
-    payload = update_data.model_dump(exclude_unset=True)  # Produces: {"stock_quantity": new_stock}
+    # 3. Serialize update payload
+    payload = ProductUpdate(stock_quantity=new_stock).model_dump(exclude_unset=True)
 
-    # 4. Send HTTP request to backend
+    # 4. Transmit request
     try:
-        url = f"{merchant.url}/products/{product_data.id}/restock"
+        url = f"{merchant.url}/products/{product_data.id}/edit"
         response = httpx.patch(url, json=payload, timeout=5.0)
 
         if response.status_code == 200:
-            # 5. Update local object so the menu shows the new stock immediately!
-            product_data.stock_quantity = added_stock
-            print(f"\n[SUCCESS] Successfully restocked '{product_data.product_name}'!")
+            product_data.stock_quantity = new_stock
+            print(f"\n[SUCCESS] Successfully completed {action} for '{product_data.product_name}'!")
             print(f"New Stock Level: {product_data.stock_quantity}")
         else:
             print(f"\n[API ERROR {response.status_code}]: {response.text}")
@@ -355,82 +400,46 @@ def restock_flow(merchant: MerchantInterface, additions: int, product_data: Prod
     except httpx.RequestError as e:
         print(f"\n[API ERROR] Could not connect to API server: {e}")
 
-def deduct_stock_flow(merchant: MerchantInterface, deductions: int, product_data: ProductResponse) -> None:
-    """
-    Description / Purpose:
-        Handles interactive inventory deduction workflow for subtracting units from stock.
-
-    Args / Parameters:
-        merchant (MerchantInterface): Active merchant session with API routing context.
-        deductions (int): Quantity of units to subtract from stock.
-        product_data (ProductResponse): Current product schema representation.
-
-    Returns:
-        None.
-
-    Constraints / Notes:
-        Feature stub awaiting backend deduction endpoint wiring.
-    """
-    try:
-        amount = int(deductions)
-        if amount <= 0:
-            print("\n[INPUT ERROR] Restock amount must be greater than zero.")
-            return
-    except ValueError:
-        print("\n[INPUT ERROR] Please enter a valid whole number.")
-        return
-
-    # 2. Perform calculation
-    deducted_stock = product_data.stock_quantity - amount
-
-    # 3. Create update schema & exclude unset fields
-    update_data = ProductUpdate(stock_quantity=deducted_stock)
-    payload = update_data.model_dump(exclude_unset=True)  # Produces: {"stock_quantity": new_stock}
-
-    # 4. Send HTTP request to backend
-    try:
-        url = f"{merchant.url}/products/{product_data.id}/deduct"
-        response = httpx.patch(url, json=payload, timeout=5.0)
-
-        if response.status_code == 200:
-            # 5. Update local object so the menu shows the new stock immediately!
-            product_data.stock_quantity = deducted_stock
-            print(f"\n[SUCCESS] Successfully deducted '{product_data.product_name}'!")
-            print(f"New Stock Level: {product_data.stock_quantity}")
-        else:
-            print(f"\n[API ERROR {response.status_code}]: {response.text}")
-
-    except httpx.RequestError as e:
-        print(f"\n[API ERROR] Could not connect to API server: {e}")
 
 def update_stock_flow(merchant: MerchantInterface, product_data: ProductResponse) -> None:
     """
     Description / Purpose:
-        Controls the interactive stock adjustment loop for deducting or replenishing inventory.
+        Interactive user input flow displaying the stock adjustment submenu (Deduct / Restock),
+        prompting for adjustment quantity, and executing adjust_stock_flow.
 
     Args / Parameters:
-        merchant (MerchantInterface): The active merchant interface session object.
+        merchant (MerchantInterface): Active merchant session with API routing configurations.
+        product_data (ProductResponse): The target product schema instance to be adjusted.
 
     Returns:
         None.
 
     Constraints / Notes:
-        Loops until the merchant selects the option to return to the main menu.
+        Loops until merchant selects option 3 to exit back to the Merchant Management menu.
+        Validates integer input for quantity before invoking adjust_stock_flow.
     """
     while True:
-        print(f"Product: {product_data.product_name}")
+        print(f"\nProduct: {product_data.product_name} | Current Stock: {product_data.stock_quantity}")
         update_stock_menu()
         choice = input("Select an option (1-3): ").strip()
 
         match choice:
             case "1":
                 print("\n[Action] Deduct Stock selected.")
-                deductions = int(input("Deductions: "))
-                deduct_stock_flow(merchant, deductions, product_data)
+                raw_qty = input("Enter quantity to deduct: ").strip()
+                try:
+                    qty = int(raw_qty)
+                    adjust_stock_flow(merchant, qty, product_data, "deduct")
+                except ValueError:
+                    print("\n[INPUT ERROR] Please enter a valid whole number.")
             case "2":
                 print("\n[Action] Restock selected.")
-                additions = int(input("Additions: "))
-                restock_flow(merchant, additions, product_data)
+                raw_qty = input("Enter quantity to add: ").strip()
+                try:
+                    qty = int(raw_qty)
+                    adjust_stock_flow(merchant, qty, product_data, "restock")
+                except ValueError:
+                    print("\n[INPUT ERROR] Please enter a valid whole number.")
             case "3":
                 print("\nReturning to Merchant Menu...")
                 break
@@ -500,7 +509,6 @@ def edit_stock_flow(my_merchant: MerchantInterface, product_data: ProductRespons
     except httpx.RequestError as e:
         print(f"\n[API ERROR] Could not connect to API server: {e}")
 
-
 def merchant_interface(current_merchant: MerchantResponse) -> None:
     """
     Description / Purpose:
@@ -526,19 +534,20 @@ def merchant_interface(current_merchant: MerchantResponse) -> None:
             case "1":
                 add_product_flow(my_merchant)
             case "2":
+                print("\n[Action] Update Stock selected.")
                 try:
                     all_products = display_all_products(my_merchant)
                     if not all_products:
                         continue
 
-                    print(all_products)
                     select_product = input("Enter Product ID: ").strip()
 
                     response = httpx.get(f"{my_merchant.url}/products/{select_product}", timeout=5.0)
 
                     if response.status_code == 200:
-                       payload = response.json()
-                       update_stock_flow(my_merchant, ProductResponse(**payload))
+                        payload = response.json()
+                        product_data = ProductResponse(**payload)
+                        update_stock_flow(my_merchant, product_data)
                     elif response.status_code == 404:
                         error_detail = response.json().get("detail", "Product not found.")
                         print(f"\n[NOT FOUND] {error_detail}")
@@ -548,7 +557,8 @@ def merchant_interface(current_merchant: MerchantResponse) -> None:
             case "3":
                 print("\n[Action] Edit Stock selected.")
                 all_products = display_all_products(my_merchant)
-                print(all_products)
+                if not all_products:
+                    continue
 
                 edit_product_id = input("Enter Product ID: ").strip()
                 response = httpx.get(f"{my_merchant.url}/products/{edit_product_id}", timeout=5.0)
@@ -562,7 +572,8 @@ def merchant_interface(current_merchant: MerchantResponse) -> None:
             case "4":
                 print("\n[Action] Delete Stock selected.")
                 all_products = display_all_products(my_merchant)
-                print(all_products)
+                if not all_products:
+                    continue
                 delete_product_id = input("Enter Product ID: ").strip()
                 delete_stock_flow(delete_product_id, my_merchant)
             case "5":

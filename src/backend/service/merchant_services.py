@@ -1,10 +1,15 @@
+import httpx
+
 from backend.repository.repositories import ProductRepository
 from backend.schemas.Product import ProductCreate, ProductResponse, ProductUpdate
 from backend.service.user_service import UserService
 
 class MerchantService(UserService):
     """Business logic and caching service for merchant operations."""
-    def __init__(self, repositories, product_repository: ProductRepository) -> None:
+    def __init__(self,
+                 repositories,
+                 product_repository:
+                 ProductRepository) -> None:
         """
         Description / Purpose:
             Initializes the MerchantService with user and product repositories,
@@ -75,25 +80,32 @@ class MerchantService(UserService):
         """
         return self.product_cache
 
-    def add_product(self, product: ProductCreate) -> None:
+    def add_product(self,
+                    product: ProductCreate
+                ) -> ProductResponse:
         """
         Description / Purpose:
-            Appends a new product to the merchant's catalog and persists changes.
+            Appends a newly created product to the catalog, persists changes to storage,
+            and returns the validated ProductResponse model.
 
         Args / Parameters:
-            product (Product): Validated Product schema instance.
+            product (ProductCreate): Validated schema containing product attributes and generated ID.
 
         Returns:
-            None.
+            ProductResponse: Strongly-typed schema representing the persisted product.
 
         Constraints / Notes:
-            Stub method awaiting full merchant-to-product relationship implementation.
+            Persists synchronously to storage via self.save_product_cache().
         """
-
-        self.product_cache.append(product.to_dict())
+        product_dict = product.to_dict()
+        self.product_cache.append(product_dict)
         self.save_product_cache()
+        return ProductResponse(**product_dict)
 
-    def delete_product(self, product_id: str, merchant_id: str) -> ProductResponse | None:
+    def delete_product(self,
+                       product_id: str,
+                       merchant_id: str
+                    ) -> dict[str, str] | ProductResponse | None:
         """
         Description / Purpose:
             Removes a product from the in-memory cache and persists the change to storage,
@@ -109,14 +121,28 @@ class MerchantService(UserService):
         Constraints / Notes:
             Verifies both product ID and merchant ownership before mutating product_cache.
         """
-        for index, products in enumerate(self.product_cache):
-            if products.get('id') == product_id and str(products.get('merchant_id')) == str(merchant_id):
-                deleted = self.product_cache.pop(index)
-                self.save_product_cache()
-                return ProductResponse(**deleted)
+
+        response = httpx.get(f"http://127.0.0.1:8001/api/v1/merchant/{merchant_id}/products/{product_id}")
+
+        if response.status_code == 404:
+            return {
+                'description': f'{response.text}',
+                'status': f'{response.status_code}',
+            }
+        else:
+            deleted_product = ProductResponse(**response.json())
+
+            for index, products in enumerate(self.product_cache):
+                if products.get('merchant_id') == str(merchant_id):
+                    products = self.product_cache.pop(index)
+                    self.save_product_cache()
+                    return ProductResponse(**products)
         return None
 
-    def get_product_by_id(self, product_id: str) -> dict | None:
+    def get_product_by_id(self,
+                          product_id: str,
+                          merchant_id: str
+                        ) -> ProductResponse | None:
         """
         Description / Purpose:
             Searches the in-memory product cache for a product matching the given ID.
@@ -131,29 +157,40 @@ class MerchantService(UserService):
             Scans product_cache linearly by key 'id'.
         """
         for index, products in enumerate(self.product_cache):
-            if products.get('id') == product_id:
-                return products
+            if products.get('id') == product_id and str(products.get('merchant_id')) == str(merchant_id):
+                return ProductResponse(**products)
         return None
 
-    def update_product(self, product_id: str, product_update: ProductUpdate) -> dict | None:
+    def update_product(
+        self,
+        merchant_id: str,
+        product_id: str,
+        product_update: ProductUpdate
+    ) -> ProductResponse | None:
         """
         Description / Purpose:
-            Updates product fields (such as stock level) in the cache and persists the change to storage.
+            Updates product fields (such as stock level, price, or name) in the in-memory cache
+            and persists changes to storage, ensuring merchant ownership verification.
 
         Args / Parameters:
-            product_id (str): Unique product identifier string to restock.
+            merchant_id (str): UUID string of the merchant requesting the update.
+            product_id (str): Unique product identifier string to update.
             product_update (ProductUpdate): Validated partial product update schema.
 
         Returns:
-            dict | None: The updated product dictionary if found and updated, or None.
+            ProductResponse | None: The updated ProductResponse model if found and modified, or None.
 
         Constraints / Notes:
             Uses exclude_unset=True to only update attributes that were explicitly provided.
         """
-        get_product = self.get_product_by_id(product_id)
-        if get_product is None:
-            return None
+        for product in self.product_cache:
+            if product.get('id') == product_id and str(product.get('merchant_id')) == str(merchant_id):
+                update_fields = product_update.model_dump(exclude_unset=True)
+                if not update_fields:
+                    return ProductResponse(**product)
 
-        get_product.update(product_update.model_dump(exclude_unset=True))
-        self.save_product_cache()
-        return get_product
+                product.update(update_fields)
+                self.save_product_cache()
+                return ProductResponse(**product)
+
+        return None

@@ -48,27 +48,33 @@ def create_merchant(
     print(merchant.model_dump())
     service.add(merchant.to_dict())
 
-@router.post("/{merchant_id}/products", status_code=status.HTTP_200_OK)
+@router.post("/{merchant_id}/products", status_code=status.HTTP_201_CREATED, response_model=ProductResponse)
 def create_a_product(
         merchant_id: str,
         prd: ProductCreate,
         service: MerchantService = Depends(get_merchant_service)
-):
+) -> ProductResponse:
     """
     Description / Purpose:
         HTTP POST endpoint to add a new product under a specific merchant's catalog.
 
     Args / Parameters:
         merchant_id (str): Unique merchant UUID string from URL path parameter.
+        prd (ProductCreate): Validated product creation schema from request body.
         service (MerchantService): Injected MerchantService singleton dependency.
 
     Returns:
-        None.
+        ProductResponse: Serialized ProductResponse schema representing the newly created product.
 
     Constraints / Notes:
-        Route stub awaiting inventory processing implementation.
+        Verifies that path merchant_id matches payload merchant_id before persisting.
     """
-    service.add_product(prd)
+    if str(prd.merchant_id) != merchant_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="URL path merchant_id does not match payload merchant_id."
+        )
+    return service.add_product(prd)
 
 @router.get("/products", status_code=status.HTTP_200_OK)
 def get_all_products(
@@ -87,15 +93,9 @@ def get_all_products(
     Constraints / Notes:
         Returns an empty list if no products exist in the catalog.
     """
-    all_products = service.get_all_products()
-    if len(all_products) == 0:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Empty list of products."
-        )
-    return all_products
+    return service.get_all_products()
 
-@router.delete("/{merchant_id}/products/{product_id}", status_code=status.HTTP_200_OK)
+@router.delete("/{merchant_id}/products/{product_id}", status_code=status.HTTP_200_OK, response_model=ProductResponse)
 def delete_a_product(
     merchant_id: str,
     product_id: str,
@@ -124,7 +124,7 @@ def delete_a_product(
         )
     return del_product
 
-@router.get("/{merchant_id}/products/{product_id}", status_code=status.HTTP_200_OK)
+@router.get("/{merchant_id}/products/{product_id}", status_code=status.HTTP_200_OK, response_model=ProductResponse)
 def get_a_product_using_id(
     merchant_id: str,
     product_id: str,
@@ -145,7 +145,7 @@ def get_a_product_using_id(
     Constraints / Notes:
         Raises HTTP 404 HTTPException if the product ID does not exist in storage.
     """
-    that_product = service.get_product_by_id(product_id)
+    that_product = service.get_product_by_id(product_id, merchant_id)
     if not that_product:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -153,92 +153,30 @@ def get_a_product_using_id(
         )
     return that_product
 
-@router.patch("/{merchant_id}/products/{product_id}/restock", status_code=status.HTTP_200_OK)
-def restock_product_endpoint(
-    merchant_id: str,
-    product_id: str,
-    product_update: ProductUpdate,
-    service: MerchantService = Depends(get_merchant_service)
-):
-    """
-    Description / Purpose:
-        HTTP PATCH endpoint to update the stock count of a specific merchant's product.
-
-    Args / Parameters:
-        merchant_id (str): Unique merchant UUID string from URL path parameter.
-        product_id (str): Unique product ID string from URL path parameter.
-        product_update (ProductUpdate): Validated update schema containing modified attributes.
-        service (MerchantService): Injected MerchantService singleton dependency.
-
-    Returns:
-        dict: The updated product record dictionary.
-
-    Constraints / Notes:
-        Raises HTTP 404 HTTPException if the product ID does not exist in inventory.
-    """
-    updated_product = service.update_product(product_id, product_update)
-    if not updated_product:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No product matches ID '{product_id}'."
-        )
-    return updated_product
-
-@router.patch("/{merchant_id}/products/{product_id}/deduct", status_code=status.HTTP_200_OK)
-def deduct_product_endpoint(
-    merchant_id: str,
-    product_id: str,
-    product_update: ProductUpdate,
-    service: MerchantService = Depends(get_merchant_service)
-):
-    """
-    Description / Purpose:
-        HTTP PATCH endpoint to update the stock count of a specific merchant's product.
-
-    Args / Parameters:
-        merchant_id (str): Unique merchant UUID string from URL path parameter.
-        product_id (str): Unique product ID string from URL path parameter.
-        product_update (ProductUpdate): Validated update schema containing modified attributes.
-        service (MerchantService): Injected MerchantService singleton dependency.
-
-    Returns:
-        dict: The updated product record dictionary.
-
-    Constraints / Notes:
-        Raises HTTP 404 HTTPException if the product ID does not exist in inventory.
-    """
-    updated_product = service.update_product(product_id, product_update)
-    if not updated_product:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No product matches ID '{product_id}'."
-        )
-    return updated_product
-
-@router.patch("/{merchant_id}/products/{product_id}/edit", status_code=status.HTTP_200_OK)
+@router.patch("/{merchant_id}/products/{product_id}/edit", status_code=status.HTTP_200_OK, response_model=ProductResponse)
 def edit_product_endpoint(
     merchant_id: str,
     product_id: str,
     product_update: ProductUpdate,
     service: MerchantService = Depends(get_merchant_service)
-):
+) -> ProductResponse:
     """
     Description / Purpose:
-        HTTP PATCH endpoint to edit non-stock details (name and unit price) of a specific merchant product.
+        HTTP PATCH endpoint to edit details (name, unit price, or stock quantity) of a specific merchant product.
 
     Args / Parameters:
         merchant_id (str): Unique merchant UUID string from URL path parameter.
         product_id (str): Unique product ID string from URL path parameter.
-        product_update (ProductUpdate): Validated update schema containing new name and/or unit price.
+        product_update (ProductUpdate): Validated update schema containing modified attributes.
         service (MerchantService): Injected MerchantService singleton dependency.
 
     Returns:
-        dict: The updated product record dictionary.
+        ProductResponse: The updated ProductResponse schema model.
 
     Constraints / Notes:
         Raises HTTP 404 HTTPException if the product ID is not found in inventory.
     """
-    updated_product = service.update_product(product_id, product_update)
+    updated_product = service.update_product(merchant_id, product_id, product_update)
     if not updated_product:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
