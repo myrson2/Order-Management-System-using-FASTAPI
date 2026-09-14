@@ -291,7 +291,7 @@ def display_all_products(merchant: MerchantInterface) -> list[dict]:
         Handles httpx.RequestError gracefully if backend connection fails.
     """
     try:
-        response = httpx.get(f"{merchant.base_url}/products", timeout=5.0)
+        response = httpx.get(f"{merchant.url}/products", timeout=5.0)
         if response.status_code == 200:
             products = response.json()
             print_product_table(products)
