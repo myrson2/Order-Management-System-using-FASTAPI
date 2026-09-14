@@ -48,7 +48,7 @@ class UserInterface:
             password = input("Enter Password: ").strip()
 
             user_login = UserLogin(email=email, password=password)
-            response = httpx.post("http://127.0.0.1:8000/api/v1/auth/login", json=user_login.model_dump(mode="json"), timeout=5.0)
+            response = httpx.post("http://127.0.0.1:8001/api/v1/auth/login", json=user_login.model_dump(mode="json"), timeout=5.0)
 
             if response.status_code == 200:
                 user_dict = response.json()

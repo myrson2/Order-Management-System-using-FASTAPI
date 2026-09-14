@@ -1,5 +1,5 @@
 from typing import TypeVar
-from backend.schemas.Users import Customer, Merchant
+from backend.schemas.Users import Customer, Merchant, User
 from backend.schemas.Users.Customer import CustomerResponse
 from backend.schemas.Users.Merchant import MerchantResponse
 from backend.schemas.Users.User import UserLogin, UserResponse, EnumType
@@ -8,7 +8,7 @@ from backend.service.merchant_services import MerchantService
 
 T = TypeVar("T", Customer, Merchant)
 
-def _find_user_in_repo(repo: list[dict], email: str, password: str, model_class: type[T]) -> T | None:
+def _find_user_in_repo(repo: list[dict], email: str, password: str, model_class: type[T]) -> User | None:
     """
     Description / Purpose:
         Searches an in-memory repository cache list for matching email and password,

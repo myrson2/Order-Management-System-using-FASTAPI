@@ -26,7 +26,7 @@ def start_api_server() -> None:
     Constraints / Notes:
         Runs as a daemon thread to allow simultaneous execution of the CLI client interface.
     """
-    uvicorn.run("backend.app:app", host="127.0.0.1", port=8000, log_level="warning")
+    uvicorn.run("backend.app:app", host="127.0.0.1", port=8001, log_level="warning")
 
 if __name__ == "__main__":
     # 1. Start server in background thread
