@@ -11,10 +11,10 @@ def generate_id() -> str:
         None.
 
     Returns:
-        str: Formatted product ID string (e.g., 'PRD-5439').
+        str: Formatted product ID string (e.g., 'PRD-3F2A19C8').
 
     Constraints / Notes:
-        Delegates random numerical generation to backend.utilities.generate_product_id.
+        Delegates collision-safe hex string generation to backend.utilities.generate_product_id.
     """
     return f"PRD-{utils.generate_product_id()}"
 
