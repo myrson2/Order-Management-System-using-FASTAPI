@@ -180,10 +180,10 @@ class ProductRepository(Repository):
     def save_repo(self, data: list[dict]) -> None:
         """
         Description / Purpose:
-            Writes merchant data records into the merchant.json file.
+            Writes product inventory data records into the product.json file with 4-space indentation.
 
         Args / Parameters:
-            data (list[dict]): List of merchant dictionaries to save.
+            data (list[dict]): List of product dictionaries to persist.
 
         Returns:
             None.
@@ -198,13 +198,13 @@ class ProductRepository(Repository):
     def load_repo(self) -> list[dict]:
         """
         Description / Purpose:
-            Reads and parses merchant data records from the merchant.json file.
+            Reads and parses product inventory data records from the product.json file.
 
         Args / Parameters:
             None.
 
         Returns:
-            list[dict]: List of merchant dictionaries (or empty list if file missing/corrupt).
+            list[dict]: List of product dictionaries (or empty list if file missing/corrupt).
 
         Constraints / Notes:
             Catches JSONDecodeError and returns an empty list if syntax is invalid.

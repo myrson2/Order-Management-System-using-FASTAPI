@@ -183,3 +183,10 @@ def edit_product_endpoint(
             detail=f"No product matches ID '{product_id}'."
         )
     return updated_product
+
+@router.get('/{merchant_id}/products', status_code=status.HTTP_200_OK, response_model=list[ProductResponse])
+def get_merchant_products(
+        merchant_id: str,
+        service: MerchantService = Depends(get_merchant_service)
+) -> list[ProductResponse]:
+    return service.get_merchant_product(merchant_id)

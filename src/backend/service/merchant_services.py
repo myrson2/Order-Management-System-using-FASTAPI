@@ -80,6 +80,12 @@ class MerchantService(UserService):
         """
         return self.product_cache
 
+    def get_merchant_product(self,
+                             merchant_id: str
+                        ) -> list[ProductResponse]:
+        merchant_products = [ProductResponse(**merchant) for merchant in self.product_cache if merchant_id == merchant['merchant_id']]
+        return merchant_products
+
     def add_product(self,
                     product: ProductCreate
                 ) -> ProductResponse:
