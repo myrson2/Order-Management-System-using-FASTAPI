@@ -126,7 +126,7 @@ def update_stock_menu() -> None:
     print("3. Back to Merchant Menu")
     print("=" * 40)
 
-def edit_profile_flow() -> None:
+def edit_profile_flow(current_merchant: MerchantResponse) -> None:
     """
     Description / Purpose:
         Interactive CLI flow allowing a merchant to update their profile details.
@@ -163,7 +163,7 @@ def handle_settings(current_merchant: MerchantResponse) -> bool:
         match choice:
             case "1":
                 print("\n[Action] Edit User Profile selected.")
-                # edit_profile_flow(current_merchant)
+                edit_profile_flow(current_merchant)
             case "2":
                 try:
                     response = httpx.post("http://127.0.0.1:8001/api/v1/auth/logout",
@@ -486,7 +486,7 @@ def edit_stock_flow(my_merchant: MerchantInterface, product_data: ProductRespons
     else:
         new_price = product_data.unit_price
 
-    # 3. Create update schema with name and unitprice only (stock_quantity excluded)
+    # 3. Create update schema with name and unit price only (stock_quantity excluded)
     update_data = ProductUpdate(
         product_name=new_name,
         unit_price=new_price
@@ -525,6 +525,7 @@ def merchant_interface(current_merchant: MerchantResponse) -> None:
     """
     my_merchant = MerchantInterface(current_merchant)
     print(my_merchant.welcome_message())
+    print(f"Store Name: {my_merchant.current_merchant.store_name}")
 
     while True:
         merchant_menu()

@@ -3,7 +3,6 @@ from uuid import uuid4, UUID
 from datetime import datetime
 from backend.schemas.OrderItems import OrderItem
 
-
 class Order(BaseModel):
     id: UUID = Field(default_factory=uuid4)
     customer_id: UUID

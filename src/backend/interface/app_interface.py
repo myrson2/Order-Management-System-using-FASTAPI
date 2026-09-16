@@ -2,6 +2,7 @@ import os
 from dotenv import load_dotenv
 
 from backend.interface import merchant_interface
+from backend.interface import customer_interface
 from backend.interface.handle_user import UserInterface
 from backend.interface.merchant_interface import MerchantInterface
 from backend.schemas.Users import MerchantResponse
@@ -95,7 +96,7 @@ def main_interface() -> None:
             if isinstance(current_user, MerchantResponse):
                 merchant_interface.merchant_interface(current_user)
             else:
-                print("NOPE ITS NOT")
+                customer_interface.customer_interface(current_user)
 
             current_user = None
 

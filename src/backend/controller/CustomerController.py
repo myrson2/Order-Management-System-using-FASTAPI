@@ -4,9 +4,9 @@ from backend.dependencies import get_customer_service
 from backend.schemas.Users import Customer
 from backend.service.customer_service import CustomerService
 
-from backend.dependencies import AUTH_SERVICE_URL
+from backend.dependencies import get_base_url
 
-router = APIRouter(prefix=f"{AUTH_SERVICE_URL}/customer", tags=["Customer"])
+router = APIRouter(prefix=f"{get_base_url}/customer", tags=["Customer"])
 
 @router.get("/")
 def get_customers(service: CustomerService = Depends(get_customer_service)):
@@ -71,6 +71,10 @@ def get_customer_by_id(customer_id: str, service: CustomerService = Depends(get_
 #     if not update_data:
 #         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer not found")
 #     return update_data
+
+@router.get('/stores')
+def get_stores(service: CustomerService = Depends(get_customer_service)):
+    return service.get_stores()
 
 
 
