@@ -1,9 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from backend.dependencies import get_customer_service
+from backend.dependencies import get_customer_service, API_BASE_URL
 from backend.schemas.Users import Customer
 from backend.service.customer_service import CustomerService
-
 from backend.dependencies import get_base_url
 
 router = APIRouter(prefix=f"{get_base_url}/customer", tags=["Customer"])
@@ -44,6 +43,14 @@ def create_customer(customer: Customer, service: CustomerService = Depends(get_c
     print(customer.model_dump())
     service.add(customer.to_dict())
 
+@router.get('/stores', status_code=status.HTTP_200_OK, response_model=list[dict])
+def get_stores(service: CustomerService = Depends(get_customer_service)):
+    return service.get_stores(API_BASE_URL)
+
+@router.get('/stores/{store_name}/products', status_code=status.HTTP_200_OK, response_model=list[dict])
+def get_store_products(store_name: str, service: CustomerService = Depends(get_customer_service)):
+    return service.get_store_products(store_name)
+
 @router.get("/{customer_id}")
 def get_customer_by_id(customer_id: str, service: CustomerService = Depends(get_customer_service)):
     """
@@ -72,9 +79,7 @@ def get_customer_by_id(customer_id: str, service: CustomerService = Depends(get_
 #         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer not found")
 #     return update_data
 
-@router.get('/stores')
-def get_stores(service: CustomerService = Depends(get_customer_service)):
-    return service.get_stores()
+
 
 
 

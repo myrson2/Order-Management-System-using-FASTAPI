@@ -17,64 +17,38 @@ class CustomerInterface:
         """Returns a formatted welcome string."""
         return f"\nLogged in as: {self.current_customer.first_name} {self.current_customer.last_name} ({self.current_customer.email}) | Rewards: ${self.current_customer.rewards:.2f}"
 
-def display_stores() -> list[dict]:
+def display_stores(curr_customer: CustomerInterface) -> list[dict]:
     """Fetches and displays all registered merchants (stores)."""
     try:
-        # Merchants (stores) are located at the /merchant/ endpoint
-        response = httpx.get('http://127.0.0.1:8001/api/v1/merchant/', timeout=5.0)
-
+        response = httpx.get(f'{curr_customer.base_url}/customer/stores', timeout=5.0)
         if response.status_code == 200:
-            stores = response.json()
-            if not stores:
-                print("\n[INFO] No stores available right now.")
-            else:
-                # Pretty print the stores or just print the raw JSON for now
-                for store in stores:
-                    print(f"Store ID: {store.get('id')} | Name: {store.get('store_name')}")
-            return stores
-        else:
-            print(f"\n[API ERROR {response.status_code}]: {response.text}")
+            print(response)
+            return response.json()
+        else :
+            print(response)
             return []
     except httpx.RequestError as e:
-        print(f"\n[API ERROR] Network error: {e}")
+        print(f"\n[API ERROR] Network failed: {e}")
         return []
 
-def display_store_items(store_name: str):
+def display_store_items(curr_customer: CustomerInterface, store_name: str) -> None:
     """Fetches and displays available products for a specific merchant."""
     try:
-        response = httpx.get('http://127.0.0.1:8001/api/v1/merchant/', timeout=5.0)
+        response = httpx.get(f'{curr_customer.base_url}/customer/stores/{store_name}/products', timeout=5.0)
+
         if response.status_code == 200:
-            response_json = response.json()
-
-            get_merchant_id = None
-            for response in response_json:
-                if response.get("store_name") == store_name:
-                    get_merchant_id = response.get("id")
-
-            if not get_merchant_id:
-                print(f"Store name, {store_name} not found")
-                return
-
-            get_products = httpx.get('http://127.0.0.1:8001/api/v1/merchant/products')
-
-            if get_products.status_code == 200:
-                products_json = get_products.json()
-
-                products = [product for product in products_json if product.get('merchant_id') == get_merchant_id]
-                if not products:
-                    print("\n[INFO] This store currently has no products.")
-                else:
-                    print("\n--- AVAILABLE PRODUCTS ---")
-                    for p in products:
-                        name = p.get('product_name', 'Unknown')
-                        price = p.get('unit_price', 0.0)
-                        stock = p.get('stock_quantity', 0)
-                        print(f"Product: {name} | Price: ${price:.2f} | Stock: {stock}")
-                    print("--------------------------\n")
+            products = response.json()
+            print("\n--- AVAILABLE PRODUCTS ---")
+            for p in products:
+                name = p.get('product_name', 'Unknown')
+                price = p.get('unit_price', 0.0)
+                stock = p.get('stock_quantity', 0)
+                print(f"Product: {name} | Price: ${price:.2f} | Stock: {stock}")
+            print("--------------------------\n")
         else:
-            print(f"\n[API ERROR {response.status_code}]: {response.text}")
+            print('Doesnt Have Products')
     except httpx.RequestError as e:
-        print('\n[API ERROR {response.status_code}]: {response.text}')
+        print(f"\n[API ERROR] Network failed: {e}")
 
 
 
@@ -99,7 +73,7 @@ def handle_store_shopping(customer: CustomerInterface, store_name: str) -> None:
     - Checkout
     """
 
-    display_store_items(store_name)
+    display_store_items(customer, store_name)
     while True:
         store_menu()
         choice = input("Select an option (1-5): ").strip()
@@ -137,6 +111,24 @@ def customer_menu() -> None:
     print("3. Logout")
     print("=" * 40)
 
+def logout(customer: CustomerInterface) -> bool:
+    try:
+        response = httpx.post("http://127.0.0.1:8001/api/v1/auth/logout",
+                              json=customer.current_customer.model_dump(mode='json'))
+        print(f"\n[LOGOUT] Logging out {customer.current_customer.first_name} {customer.current_customer.last_name}...")
+
+        if response.status_code == 200:
+            print(
+                f"\n[LOGOUT] Successfully logged out {customer.current_customer.first_name} {customer.current_customer.last_name}.")
+            return True
+        else:
+            print(f"\n[ERROR] Logout failed with status code {response.status_code}: {response.text}")
+            return False
+
+    except httpx.RequestError as e:
+        print(f"\n[API ERROR] Could not connect to server for logout: {e}")
+        return False
+
 def customer_interface(current_customer: CustomerResponse) -> None:
     """
     Main CLI loop for the Customer.
@@ -155,10 +147,13 @@ def customer_interface(current_customer: CustomerResponse) -> None:
         match choice:
             case "1":
                 print("\n[Action] View/Choose Stores selected.")
-                stores = display_stores()
+                stores = display_stores(customer)
 
                 if stores is None or len(stores) == 0:
                     print('Dont have any stores available.')
+                else:
+                    for store in stores:
+                        print(f"Store ID: {store.get('id')} | Name: {store.get('store_name')}")
 
                 merchant_store = input("Enter store name: ")
 
@@ -172,7 +167,11 @@ def customer_interface(current_customer: CustomerResponse) -> None:
                 pass
             case "3":
                 print("\nLogging out...")
-                # TODO: Implement logout API call and terminate session
-                break
+                is_logging_out = logout(customer)
+
+                if is_logging_out:
+                    break
+                else:
+                    continue
             case _:
                 print("\n[ERROR] Invalid option. Please enter 1-3.")
