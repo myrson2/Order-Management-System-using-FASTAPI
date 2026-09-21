@@ -239,5 +239,13 @@ class ProductUpdate(BaseModel):
             return value
         return value
 
+class ProductResponse(BaseModel):
+    id: str = Field(...)
+    merchant_id: UUID
+    stock_quantity: int = Field(..., ge=0, strict=True)
+    unit_price: float = Field(..., strict=True)
+    product_name: str = Field(..., min_length=1, max_length=50, strict=True)
+
+
 
 

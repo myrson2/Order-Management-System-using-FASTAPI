@@ -269,3 +269,63 @@ class ProductRepository(Repository):
 #         """
 #         return self.order_repos
 
+class CartRepository(Repository):
+    """Handles persistent reading and writing of cart JSON data."""
+
+    def __init__(self, file_path: Path) -> None:
+        """
+        Description / Purpose:
+            Initializes CartRepository with a specific JSON file storage path.
+
+        Args / Parameters:
+            file_path (Path): Pathlib Path pointing to cart.json storage file.
+
+        Returns:
+            None.
+
+        Constraints / Notes:
+            Stores target path reference for file-based JSON persistence operations.
+        """
+        self.file_path = file_path
+
+    def save_repo(self, data: list[dict]) -> None:
+        """
+        Description / Purpose:
+            Writes cart data records into the cart.json file with 4-space indentation.
+
+        Args / Parameters:
+            data (list[dict]): List of cart dictionaries to persist.
+
+        Returns:
+            None.
+
+        Constraints / Notes:
+            Creates parent directories automatically if missing.
+        """
+        self.file_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(self.file_path, "w", encoding="utf-8") as file:
+            json.dump(data, file, indent=4)
+
+    def load_repo(self) -> list[dict]:
+        """
+        Description / Purpose:
+            Reads and parses cart data records from the cart.json file.
+
+        Args / Parameters:
+            None.
+
+        Returns:
+            list[dict]: List of cart dictionaries (or empty list if file missing/corrupt).
+
+        Constraints / Notes:
+            Catches JSONDecodeError and returns an empty list if syntax is invalid.
+        """
+        try:
+            if not self.file_path.exists():
+                return []
+            with open(self.file_path, "r", encoding="utf-8") as json_file:
+                load_file = json.load(json_file)
+                return load_file
+        except json.JSONDecodeError:
+            return []
+

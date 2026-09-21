@@ -12,7 +12,6 @@ load_dotenv()
 API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8001/api/v1")
 CUSTOMER_URL = f"{API_BASE_URL}/customer"
 MERCHANT_URL = f"{API_BASE_URL}/merchant"
-ORDER_URL = f"{API_BASE_URL}/order"
 user_interface = UserInterface(CUSTOMER_URL, MERCHANT_URL)
 
 def menu() -> None: 

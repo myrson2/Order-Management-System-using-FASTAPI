@@ -2,13 +2,15 @@ from typing import Any
 
 import httpx
 
-from backend.schemas.Users import Customer
+from backend.schemas.Cart import Cart
+from backend.schemas.Users import Customer, MerchantResponse
 from backend.service.user_service import UserService
 
 class CustomerService(UserService):
     """Business logic and caching service for customer operations."""
     def __init__(self, repositories):
         super().__init__(repositories)
+        self.order_items : list[Cart] = []
 
     @staticmethod
     def get_stores(base_url: str) -> list[dict]:
@@ -56,3 +58,18 @@ class CustomerService(UserService):
                 print(f"\n[API ERROR {response.status_code}]: {response.text}")
         except httpx.RequestError as e:
             print(f"\n[API ERROR] Network failed: {e}")
+
+    @staticmethod
+    def get_merchant(store_name) -> MerchantResponse | None:
+        try:
+            response = httpx.get('http://127.0.0.1:8001/api/v1/merchant/', timeout=5.0)
+            if response.status_code == 200:
+                for response in response.json():
+                    if response.get("store_name") == store_name:
+                        return MerchantResponse(**response)
+                return None
+            else:
+                return None
+        except httpx.RequestError as e:
+            print(e)
+
