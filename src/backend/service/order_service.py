@@ -1,10 +1,14 @@
+from fastapi import HTTPException
+from starlette import status
+
 from backend.schemas.Cart import CartCreate, CartResponse
+from backend.schemas.Product import ProductResponse
 
 
 class OrderService:
     """Business logic service for managing order transactions."""
 
-    def __init__(self, cart_repo) -> None:
+    def __init__(self, cart_repo, product_repo) -> None:
         """
         Description / Purpose:
             Initializes OrderService with a CartRepository dependency and populates the cart cache.
@@ -19,6 +23,7 @@ class OrderService:
             Stores repository reference and invokes _load_cart_cache() to load persistent records.
         """
         self.cart_repo = cart_repo
+        self.product_repo = product_repo
         self.cart_cache: list[dict] = []
         self._load_cart_cache()
 
@@ -56,7 +61,43 @@ class OrderService:
         json_data = [data for data in self.cart_cache]
         self.cart_repo.save_repo(json_data)
 
-    def add_to_cart(self, cart: CartCreate) -> CartResponse:
+    def validate_quantity(self, quantity: int, merchant_id: str) -> bool:
+        for products in self.product_repo.load_repo():
+            if products['merchant_id'] != merchant_id:
+                continue
+            else:
+                if products['quantity'] < quantity:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Requested quantity ({quantity}) exceeds available stock ({products['stock_quantity']})."
+                    )
+                return True
+        return False
+
+    def get_product_by_id(self,
+                          product_id: str,
+                          merchant_id: str
+                        ) -> ProductResponse | None:
+        """
+        Description / Purpose:
+            Searches the in-memory product cache for a product matching the given ID.
+
+        Args / Parameters:
+            product_id (str): Unique product identifier string to look up.
+
+        Returns:
+            dict | None: The matching product dictionary if found, or None.
+
+        Constraints / Notes:
+            Scans product_cache linearly by key 'id'.
+        """
+        for index, products in enumerate(self.product_repo.load_repo()):
+            if products.get('id') == product_id and str(products.get('merchant_id')) == str(merchant_id):
+                return ProductResponse(**products)
+        return None
+
+
+    def add_to_cart(self, cart: CartCreate) -> CartResponse | None:
         """
         Description / Purpose:
             Appends a new cart item to the in-memory cache and persists it to JSON storage.
@@ -71,9 +112,12 @@ class OrderService:
             Serializes model to JSON-compatible dictionary before cache storage.
         """
         cart_dict = cart.model_dump(mode='json')
-        self.cart_cache.append(cart_dict)
-        self.save_cart_cache()
-        return CartResponse(**cart_dict)
+        if self.validate_quantity(cart_dict['quantity'], cart_dict['merchant_id']):
+            self.cart_cache.append(cart_dict)
+            self.save_cart_cache()
+            return CartResponse(**cart_dict)
+        else:
+            return None
 
     def view_my_cart(self, customer_id: str) -> list[dict]:
         """

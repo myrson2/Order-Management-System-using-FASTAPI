@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, status
 from backend.dependencies import get_base_url, get_order_service
 from backend.schemas.Cart import CartCreate, CartResponse
+from backend.schemas.Product import ProductResponse
 from backend.service import OrderService
 
 router = APIRouter(prefix=f"{get_base_url}/cart", tags=["Order"])
@@ -41,3 +42,7 @@ def view_cart(customer_id: str, service: OrderService = Depends(get_order_servic
         Returns empty list [] if no items match the customer ID.
     """
     return service.view_my_cart(customer_id)
+
+@router.get('/customer/{customer_id}/product/{product_id}', status_code=status.HTTP_200_OK, response_model=ProductResponse)
+def get_product(customer_id: str, product_id: str, merchant_id: str, service: OrderService = Depends(get_order_service)):
+    return service.get_product_by_id(product_id, merchant_id)

@@ -85,6 +85,15 @@ def add_to_cart(customer: CustomerInterface, merchant: MerchantResponse) -> Cart
     try:
         #make validation for prd_id if that id is there or not
         prd_id = input("\nEnter Product ID: ")
+
+        response = httpx.get(
+            f'{customer.customer_url}/product/{prd_id}',
+            params={'merchant_id': str(merchant.id)},
+        )
+
+        if response.status_code != 200:
+            raise ValueError(f'Product ID ({prd_id}) is not found.')
+
         qty = int(input("\nEnter Quantity: "))
 
         prd_items = CartCreate(
@@ -103,6 +112,7 @@ def add_to_cart(customer: CustomerInterface, merchant: MerchantResponse) -> Cart
             print(f'Customer Added An Item Successfully.')
             return CartResponse(**add_to_cart_response.json())
         else:
+
             print(f"[API ERROR {add_to_cart_response.status_code}]: {add_to_cart_response.text}")
     except httpx.RequestError as e:
         print(f"\n[API ERROR] Network failed: {e}")

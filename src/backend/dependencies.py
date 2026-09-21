@@ -41,7 +41,7 @@ merchant_repo = MerchantRepository(merchant_path)
 product_repo = ProductRepository(product_path)
 cart_repo = CartRepository(cart_path)
 
-order_service = OrderService(cart_repo)
+order_service = OrderService(cart_repo, product_repo)
 customer_service = CustomerService(customer_repo)
 merchant_service = MerchantService(merchant_repo, product_repo)
 
