@@ -1,7 +1,7 @@
 import httpx
 
 from backend.schemas.Cart import CartCreate, CartResponse
-from backend.schemas.OrderItems import OrderItem, OrderItemCreate
+from backend.schemas.Product import ProductResponse
 from backend.schemas.Users import CustomerResponse, MerchantResponse
 
 
@@ -47,8 +47,8 @@ def display_store_items(curr_customer: CustomerInterface, store_name: str) -> No
                 name = p.get('product_name', 'Unknown')
                 price = p.get('unit_price', 0.0)
                 stock = p.get('stock_quantity', 0)
-                id = p.get('id')
-                print(f"Product_ID: {id} | Product: {name} | Price: ${price:.2f} | Stock: {stock}")
+                id_name = p.get('id')
+                print(f"Product_ID: {id_name} | Product: {name} | Price: ${price:.2f} | Stock: {stock}")
             print("--------------------------\n")
         else:
             print('Doesnt Have Products')
@@ -67,6 +67,13 @@ def store_menu() -> None:
     print("5. Exit Store")
     print("=" * 40)
 
+def get_product_response(prd_id: str, customer: CustomerInterface, merchant: MerchantResponse):
+    response = httpx.get(
+        f'{customer.base_url}/cart/customer/{customer.current_customer.id}/product/{prd_id}/product',
+        params={'merchant_id': str(merchant.id)},
+    )
+    return response
+
 def add_to_cart(customer: CustomerInterface, merchant: MerchantResponse) -> CartResponse | None:
     """
     Description / Purpose:
@@ -84,19 +91,26 @@ def add_to_cart(customer: CustomerInterface, merchant: MerchantResponse) -> Cart
     """
     try:
         #make validation for prd_id if that id is there or not
-        prd_id = input("\nEnter Product ID: ")
+        prd_id = input("\nEnter Product ID: ").strip()
 
-        response = httpx.get(
-            f'{customer.customer_url}/product/{prd_id}',
-            params={'merchant_id': str(merchant.id)},
+        response = get_product_response(
+            prd_id=prd_id,
+            customer=customer,
+            merchant=merchant
         )
 
         if response.status_code != 200:
             raise ValueError(f'Product ID ({prd_id}) is not found.')
 
+        product = ProductResponse(**response.json())
+
         qty = int(input("\nEnter Quantity: "))
 
+        if qty > product.stock_quantity:
+            raise ValueError(f'Order items cant exceed to {response.json().get("quantity")}.')
+
         prd_items = CartCreate(
+            product_name=product.product_name,
             customer_id=str(customer.current_customer.id),
             merchant_id=str(merchant.id),
             product_id=prd_id,
@@ -114,6 +128,8 @@ def add_to_cart(customer: CustomerInterface, merchant: MerchantResponse) -> Cart
         else:
 
             print(f"[API ERROR {add_to_cart_response.status_code}]: {add_to_cart_response.text}")
+    except ValueError as e:
+        print(e)
     except httpx.RequestError as e:
         print(f"\n[API ERROR] Network failed: {e}")
 
@@ -139,10 +155,31 @@ def view_cart(customer: CustomerInterface) -> None:
         else:
             print("\n--- YOUR CART ---")
             for item in cart_items:
-                print(f"Product ID: {item.get('product_id')} | Quantity: {item.get('quantity')}")
+                cart_id = item.get('id', 'N/A')
+                prod_name = item.get('product_name', 'Unknown Product')
+                prod_id = item.get('product_id', 'N/A')
+                merchant_id = item.get('merchant_id', 'N/A')
+                quantity = item.get('quantity', 0)
+                print(f"Cart ID: {cart_id} | Product: {prod_name} ({prod_id}) | Store ID: {merchant_id} | Quantity: {quantity}")
             print("-----------------\n")
     else:
         print(f"\n[ERROR {response.status_code}]: {response.text}")
+
+def edit_cart(customer: CustomerInterface, merchant: MerchantResponse) -> None:
+    try:
+        view_cart(customer)
+        cart_id = input('Enter Product ID: ').strip()
+
+        response = httpx.get(
+            f'{customer.base_url}/cart/customer/{customer.current_customer.id}/{cart_id}/cart'
+        )
+
+        if response.status_code == 200:
+            print(response.json())
+        else:
+            print(f"\n[ERROR {response.status_code}]: {response.text}")
+    except httpx.RequestError as e:
+        print(e)
 
 def handle_store_shopping(customer: CustomerInterface, store_name: str) -> None:
     """
@@ -172,8 +209,7 @@ def handle_store_shopping(customer: CustomerInterface, store_name: str) -> None:
                         view_cart(customer)
                     case "3":
                         print("\n[Action] Edit Order selected.")
-                        # TODO: Implement Edit Order logic
-                        pass
+                        edit_cart(customer, merchant)
                     case "4":
                         print("\n[Action] Checkout selected.")
                         # TODO: Implement Checkout logic

@@ -18,3 +18,7 @@ class CartResponse(BaseModel):
     customer_id: str = Field(...)
     merchant_id: str = Field(...)
     product_id: str = Field(...)
+
+class CartUpdate(BaseModel):
+    product_name: str = Field(...)
+    quantity: int = Field(gt=0)

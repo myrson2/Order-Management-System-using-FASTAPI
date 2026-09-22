@@ -43,6 +43,42 @@ def view_cart(customer_id: str, service: OrderService = Depends(get_order_servic
     """
     return service.view_my_cart(customer_id)
 
-@router.get('/customer/{customer_id}/product/{product_id}', status_code=status.HTTP_200_OK, response_model=ProductResponse)
+@router.get('/customer/{customer_id}/product/{product_id}/product', status_code=status.HTTP_200_OK, response_model=ProductResponse)
 def get_product(customer_id: str, product_id: str, merchant_id: str, service: OrderService = Depends(get_order_service)):
+    """
+    Description / Purpose:
+        HTTP GET endpoint to retrieve product details for a specific product ID and merchant ID.
+
+    Args / Parameters:
+        customer_id (str): Customer ID path parameter.
+        product_id (str): Product ID path parameter to look up.
+        merchant_id (str): Merchant ID query parameter.
+        service (OrderService): Injected OrderService dependency instance.
+
+    Returns:
+        ProductResponse: Serialized ProductResponse schema if found.
+
+    Constraints / Notes:
+        Raises HTTP 404 Exception if the product is not found.
+    """
     return service.get_product_by_id(product_id, merchant_id)
+
+@router.get('/customer/{customer_id}/{cart_id}/cart', status_code=status.HTTP_200_OK, response_model=CartResponse)
+def get_cart_by_id(customer_id: str, cart_id: str, service: OrderService = Depends(get_order_service)):
+    """
+    Description / Purpose:
+        HTTP GET endpoint to fetch a single cart item by cart ID and customer ID.
+
+    Args / Parameters:
+        customer_id (str): Customer ID path parameter.
+        cart_id (str): Cart item ID path parameter.
+        service (OrderService): Injected OrderService dependency instance.
+
+    Returns:
+        CartResponse: Serialized CartResponse schema of the matching cart item.
+
+    Constraints / Notes:
+        Raises HTTP 404 Exception if the cart item is not found.
+    """
+    return service.get_cart_by_id(cart_id, customer_id)
+

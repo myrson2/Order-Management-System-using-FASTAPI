@@ -61,18 +61,34 @@ class OrderService:
         json_data = [data for data in self.cart_cache]
         self.cart_repo.save_repo(json_data)
 
-    def validate_quantity(self, quantity: int, merchant_id: str) -> bool:
-        for products in self.product_repo.load_repo():
-            if products['merchant_id'] != merchant_id:
-                continue
-            else:
-                if products['quantity'] < quantity:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Requested quantity ({quantity}) exceeds available stock ({products['stock_quantity']})."
-                    )
-                return True
-        return False
+    def get_cart_by_id(self,
+                       cart_id: str,
+                       customer_id: str
+                        ) -> CartResponse | None:
+        """
+        Description / Purpose:
+            Searches the in-memory product cache for a product matching the given ID.
+
+        Args / Parameters:
+            product_id (str): Unique product identifier string to look up.
+
+        Returns:
+            dict | None: The matching product dictionary if found, or None.
+
+        Constraints / Notes:
+            Scans product_cache linearly by key 'id'.
+        """
+        cart_item = None
+        for index, cart in enumerate(self.cart_repo.load_repo()):
+            if cart.get('id') == cart_id and str(cart.get('customer_id')) == str(customer_id):
+                cart_item = CartResponse(**cart)
+
+        if cart_item is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Product ID ({cart_id}) not found."
+            )
+        return cart_item
 
     def get_product_by_id(self,
                           product_id: str,
@@ -91,11 +107,30 @@ class OrderService:
         Constraints / Notes:
             Scans product_cache linearly by key 'id'.
         """
-        for index, products in enumerate(self.product_repo.load_repo()):
-            if products.get('id') == product_id and str(products.get('merchant_id')) == str(merchant_id):
-                return ProductResponse(**products)
-        return None
+        prd_item = None
+        for index, product in enumerate(self.product_repo.load_repo()):
+            if product.get('id') == product_id and str(product.get('merchant_id')) == str(merchant_id):
+                prd_item = ProductResponse(**product)
 
+        if prd_item is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Product ID ({product_id}) not found."
+            )
+        return prd_item
+
+    def validate_quantity(self, quantity: int, merchant_id: str) -> bool:
+        for products in self.product_repo.load_repo():
+            if products['merchant_id'] != merchant_id:
+                continue
+            else:
+                if products['stock_quantity'] < quantity:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Requested quantity ({quantity}) exceeds available stock ({products['stock_quantity']})."
+                    )
+                return True
+        return False
 
     def add_to_cart(self, cart: CartCreate) -> CartResponse | None:
         """
