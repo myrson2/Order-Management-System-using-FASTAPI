@@ -240,12 +240,92 @@ def delete_cart_item_cli(customer: CustomerInterface) -> None:
     except httpx.RequestError as e:
         print(f"\n[API ERROR] Network failed: {e}")
 
+def checkout_cli(customer: CustomerInterface) -> None:
+    """
+    Description / Purpose:
+        CLI interactive prompt displaying current cart items, requesting checkout confirmation, and issuing an HTTP POST request to process the order receipt.
+
+    Args / Parameters:
+        customer (CustomerInterface): Active customer session interface instance.
+
+    Returns:
+        None.
+
+    Constraints / Notes:
+        Sends HTTP POST request to /order/checkout/{customer_id} using httpx.
+    """
+    try:
+        view_cart(customer)
+        confirm = input("\nConfirm Checkout? (y/n): ").strip().lower()
+        if confirm != 'y':
+            print("\n[INFO] Checkout cancelled.")
+            return
+
+        response = httpx.post(f"{customer.base_url}/order/checkout/{customer.current_customer.id}")
+
+        if response.status_code == 201:
+            order_data = response.json()
+            print("\n" + "=" * 50)
+            print("             ORDER RECEIPT (SUCCESS)            ")
+            print("=" * 50)
+            print(f"Order ID: {order_data.get('id')}")
+            print(f"Order Date: {order_data.get('order_date')}")
+            print("Items Purchased:")
+            for item in order_data.get('order_list', []):
+                print(f"  - {item.get('product_name')} (x{item.get('quantity')}) @ ${item.get('unit_price'):.2f} = ${item.get('total_price'):.2f}")
+            print(f"Total Amount Paid: ${order_data.get('total_amount'):.2f}")
+            print("=" * 50 + "\n")
+        else:
+            try:
+                detail = response.json().get('detail', response.text)
+            except Exception:
+                detail = response.text
+            print(f"\n[CHECKOUT ERROR {response.status_code}]: {detail}")
+    except httpx.RequestError as e:
+        print(f"\n[API ERROR] Network failed: {e}")
+
+def view_order_history_cli(customer: CustomerInterface) -> None:
+    """
+    Description / Purpose:
+        Fetches and displays past completed order receipts for the logged-in customer from the backend API.
+
+    Args / Parameters:
+        customer (CustomerInterface): Active customer session interface instance.
+
+    Returns:
+        None.
+
+    Constraints / Notes:
+        Sends HTTP GET request to /order/customer/{customer_id} using httpx.
+    """
+    try:
+        response = httpx.get(f"{customer.base_url}/order/customer/{customer.current_customer.id}")
+        if response.status_code == 200:
+            history = response.json()
+            if not history:
+                print("\n[INFO] You have no past order receipts.")
+            else:
+                print("\n" + "=" * 50)
+                print("             PAST ORDER HISTORY                 ")
+                print("=" * 50)
+                for order in history:
+                    print(f"\nOrder ID: {order.get('id')} | Date: {order.get('order_date')} | Total: ${order.get('total_amount'):.2f}")
+                    print("  Items:")
+                    for item in order.get('order_list', []):
+                        print(f"    - {item.get('product_name')} x{item.get('quantity')} (${item.get('total_price'):.2f})")
+                print("=" * 50 + "\n")
+        else:
+            print(f"\n[ERROR {response.status_code}]: {response.text}")
+    except httpx.RequestError as e:
+        print(f"\n[API ERROR] Network failed: {e}")
+
 def handle_store_shopping(customer: CustomerInterface, store_name: str) -> None:
     """
     Handles the shopping flow inside a specific store:
     - Add To Cart
     - View Cart
     - Edit Order
+    - Delete Cart Item
     - Checkout
     """
 
@@ -274,8 +354,7 @@ def handle_store_shopping(customer: CustomerInterface, store_name: str) -> None:
                         delete_cart_item_cli(customer)
                     case "5":
                         print("\n[Action] Checkout selected.")
-                        # TODO: Implement Checkout logic
-                        pass
+                        checkout_cli(customer)
                     case "6":
                         print("\nReturning to Customer Management Menu...")
                         break
@@ -333,6 +412,7 @@ def customer_interface(current_customer: CustomerResponse) -> None:
     Main CLI loop for the Customer.
     Handles:
     - View/Choose Stores
+    - View Cart
     - History
     - Logout
     """
@@ -366,8 +446,7 @@ def customer_interface(current_customer: CustomerResponse) -> None:
 
             case "3":
                 print("\n[Action] History selected.")
-                # TODO: Implement order history retrieval
-                pass
+                view_order_history_cli(customer)
             case "4":
                 print("\nLogging out...")
                 is_logging_out = logout(customer)

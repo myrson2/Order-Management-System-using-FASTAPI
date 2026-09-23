@@ -3,9 +3,13 @@ from pydantic import BaseModel, Field, field_validator
 
 
 class OrderItem(BaseModel):
-    order_item_id: UUID = Field(default_factory=uuid4)
+    order_item_id: str
     total_price: float
-
-class OrderItemCreate(OrderItem):
     product_id: str
     quantity: float = Field(gt=0)
+    product_name: str
+    unit_price: float
+
+
+class OrderItemCreate(OrderItem):
+    pass
