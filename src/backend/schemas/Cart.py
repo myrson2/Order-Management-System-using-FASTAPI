@@ -20,5 +20,5 @@ class CartResponse(BaseModel):
     product_id: str = Field(...)
 
 class CartUpdate(BaseModel):
-    product_name: str = Field(...)
-    quantity: int = Field(gt=0)
+    product_name: str | None = None
+    quantity: int | None = Field(default=None, gt=0)

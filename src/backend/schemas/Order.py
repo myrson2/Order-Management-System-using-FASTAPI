@@ -9,7 +9,14 @@ class Order(BaseModel):
     order_date: datetime = Field(default_factory=datetime.now)
     order_list: list[OrderItem] = Field(default_factory=list)
     total_amount: float
-    
+
+class OrderCreate(Order):
+    created_at: datetime = Field(default_factory=datetime.now)
+
+class OrderResponse(Order):
+    pass
+
+
 
 
     

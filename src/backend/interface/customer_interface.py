@@ -1,9 +1,8 @@
 import httpx
 
-from backend.schemas.Cart import CartCreate, CartResponse
+from backend.schemas.Cart import CartCreate, CartResponse, CartUpdate
 from backend.schemas.Product import ProductResponse
 from backend.schemas.Users import CustomerResponse, MerchantResponse
-
 
 class CustomerInterface:
     """CLI client interface handler for Customer operations."""
@@ -62,9 +61,10 @@ def store_menu() -> None:
     print("=" * 40)
     print("1. Add To Cart")
     print("2. View Cart")
-    print("3. Edit Order (Cart)")
-    print("4. Checkout")
-    print("5. Exit Store")
+    print("3. Edit Cart Item")
+    print("4. Delete Cart Item")
+    print("5. Checkout")
+    print("6. Exit Store")
     print("=" * 40)
 
 def get_product_response(prd_id: str, customer: CustomerInterface, merchant: MerchantResponse):
@@ -165,21 +165,80 @@ def view_cart(customer: CustomerInterface) -> None:
     else:
         print(f"\n[ERROR {response.status_code}]: {response.text}")
 
-def edit_cart(customer: CustomerInterface, merchant: MerchantResponse) -> None:
+def edit_cart(customer: CustomerInterface) -> None:
+    """
+    Description / Purpose:
+        CLI interactive prompt allowing a customer to edit quantities of an existing cart item.
+
+    Args / Parameters:
+        customer (CustomerInterface): Active customer session interface instance.
+        merchant (MerchantResponse): MerchantResponse schema instance representing the store.
+
+    Returns:
+        None.
+
+    Constraints / Notes:
+        Sends HTTP PATCH request to /cart/customer/{customer_id}/item/{cart_id} with CartUpdate payload.
+    """
     try:
         view_cart(customer)
-        cart_id = input('Enter Product ID: ').strip()
+        cart_id = input("\nEnter Cart Item ID to edit: ").strip()
 
-        response = httpx.get(
+        check_response = httpx.get(
             f'{customer.base_url}/cart/customer/{customer.current_customer.id}/{cart_id}/cart'
         )
 
+        if check_response.status_code == 200:
+            edit_qty = int(input("Enter New Quantity: ").strip())
+            if edit_qty <= 0:
+                print("\n[INPUT ERROR] Quantity must be greater than zero.")
+                return
+
+            update_payload = CartUpdate(quantity=edit_qty)
+            patch_response = httpx.patch(
+                f'{customer.base_url}/cart/customer/{customer.current_customer.id}/item/{cart_id}',
+                json=update_payload.model_dump(exclude_unset=True)
+            )
+
+            if patch_response.status_code == 200:
+                print("\n[SUCCESS] Cart item updated successfully!")
+            else:
+                print(f"\n[ERROR {patch_response.status_code}]: {patch_response.text}")
+        else:
+            print(f"\n[ERROR {check_response.status_code}]: {check_response.text}")
+    except ValueError:
+        print("\n[INPUT ERROR] Please enter a valid number for quantity.")
+    except httpx.RequestError as e:
+        print(f"\n[API ERROR] Network failed: {e}")
+
+def delete_cart_item_cli(customer: CustomerInterface) -> None:
+    """
+    Description / Purpose:
+        CLI interactive prompt requesting a Cart Item ID to issue an HTTP DELETE request to the backend.
+
+    Args / Parameters:
+        customer (CustomerInterface): Active customer session interface instance.
+
+    Returns:
+        None.
+
+    Constraints / Notes:
+        Sends HTTP DELETE request to /cart/customer/{customer_id}/{cart_id} using httpx.
+    """
+    try:
+        view_cart(customer)
+        cart_id = input("\nEnter Cart Item ID to delete: ").strip()
+
+        response = httpx.delete(
+            f"{customer.base_url}/cart/customer/{customer.current_customer.id}/{cart_id}"
+        )
+
         if response.status_code == 200:
-            print(response.json())
+            print(f"\n[SUCCESS] Cart item ({cart_id}) deleted successfully!")
         else:
             print(f"\n[ERROR {response.status_code}]: {response.text}")
     except httpx.RequestError as e:
-        print(e)
+        print(f"\n[API ERROR] Network failed: {e}")
 
 def handle_store_shopping(customer: CustomerInterface, store_name: str) -> None:
     """
@@ -198,7 +257,7 @@ def handle_store_shopping(customer: CustomerInterface, store_name: str) -> None:
             display_store_items(customer, store_name)  # Change Store name to Merchant Object
             while True:
                 store_menu()
-                choice = input("Select an option (1-5): ").strip()
+                choice = input("Select an option (1-6): ").strip()
 
                 match choice:
                     case "1":
@@ -208,17 +267,20 @@ def handle_store_shopping(customer: CustomerInterface, store_name: str) -> None:
                         print("\n[Action] View Cart selected.")
                         view_cart(customer)
                     case "3":
-                        print("\n[Action] Edit Order selected.")
-                        edit_cart(customer, merchant)
+                        print("\n[Action] Edit Cart Item selected.")
+                        edit_cart(customer)
                     case "4":
+                        print("\n[Action] Delete Cart Item selected.")
+                        delete_cart_item_cli(customer)
+                    case "5":
                         print("\n[Action] Checkout selected.")
                         # TODO: Implement Checkout logic
                         pass
-                    case "5":
+                    case "6":
                         print("\nReturning to Customer Management Menu...")
                         break
                     case _:
-                        print("\n[ERROR] Invalid option. Please enter 1-5.")
+                        print("\n[ERROR] Invalid option. Please enter 1-6.")
         else:
             return None
     except httpx.RequestError as e:

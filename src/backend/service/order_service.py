@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 from starlette import status
 
-from backend.schemas.Cart import CartCreate, CartResponse
+from backend.schemas.Cart import CartCreate, CartResponse, CartUpdate
 from backend.schemas.Product import ProductResponse
 
 
@@ -170,4 +170,52 @@ class OrderService:
         """
         cart = [data for data in self.cart_cache if data['customer_id'] == customer_id]
         return cart
+
+    def update_cart_item(self, customer_id: str, cart_id: str, payload: CartUpdate) -> CartResponse | None:
+        """
+        Description / Purpose:
+            Updates specific fields of an existing cart item in cache and persists changes to JSON storage.
+
+        Args / Parameters:
+            customer_id (str): Customer ID associated with the cart item.
+            cart_id (str): Unique cart item primary key ID string.
+            payload (CartUpdate): Validated Pydantic schema containing partial fields to update.
+
+        Returns:
+            CartResponse | None: Updated CartResponse object if found and modified, or None.
+
+        Constraints / Notes:
+            Uses model_dump(exclude_unset=True) for PATCH semantics to update only specified fields.
+        """
+        for item in self.cart_cache:
+            if str(item.get('id')) == str(cart_id) and str(item.get('customer_id')) == str(customer_id):
+                update_data = payload.model_dump(exclude_unset=True)
+                item.update(update_data)
+                self.save_cart_cache()
+                return CartResponse(**item)
+        return None
+
+    def delete_cart_item(self, customer_id: str, cart_id: str) -> CartResponse | None:
+        """
+        Description / Purpose:
+            Removes a specific cart item matching cart_id and customer_id from cache and persistent disk storage.
+
+        Args / Parameters:
+            customer_id (str): Customer ID associated with the cart item.
+            cart_id (str): Unique cart item primary key ID string.
+
+        Returns:
+            CartResponse | None: Deleted CartResponse object if found and removed, or None.
+
+        Constraints / Notes:
+            Mutates self.cart_cache in-place and calls save_cart_cache().
+        """
+        for item in self.cart_cache:
+            if str(item.get('id')) == str(cart_id) and str(item.get('customer_id')) == str(customer_id):
+                self.cart_cache.remove(item)
+                self.save_cart_cache()
+                return CartResponse(**item)
+        return None
+
+    def checkout(self, cart_id: str) -> OrderResponse:
 

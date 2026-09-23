@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from backend.dependencies import get_base_url, get_order_service
-from backend.schemas.Cart import CartCreate, CartResponse
+from backend.schemas.Cart import CartCreate, CartResponse, CartUpdate
 from backend.schemas.Product import ProductResponse
 from backend.service import OrderService
 
@@ -81,4 +81,55 @@ def get_cart_by_id(customer_id: str, cart_id: str, service: OrderService = Depen
         Raises HTTP 404 Exception if the cart item is not found.
     """
     return service.get_cart_by_id(cart_id, customer_id)
+
+@router.patch('/customer/{customer_id}/item/{cart_id}', status_code=status.HTTP_200_OK, response_model=CartResponse)
+def edit_cart_item(customer_id: str, cart_id: str, payload: CartUpdate, service: OrderService = Depends(get_order_service)):
+    """
+    Description / Purpose:
+        HTTP PATCH endpoint to partially update fields of an existing cart item.
+
+    Args / Parameters:
+        customer_id (str): Customer ID path parameter.
+        cart_id (str): Unique cart item primary key ID string path parameter.
+        payload (CartUpdate): Validated Pydantic CartUpdate payload containing optional fields.
+        service (OrderService): Injected OrderService dependency instance.
+
+    Returns:
+        CartResponse: Updated CartResponse schema of the modified cart item.
+
+    Constraints / Notes:
+        Raises HTTP 404 Exception if no cart item matches the cart_id and customer_id.
+    """
+    updated_item = service.update_cart_item(customer_id, cart_id, payload)
+    if not updated_item:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Cart item ID ({cart_id}) not found for customer."
+        )
+    return updated_item
+
+@router.delete('/customer/{customer_id}/{cart_id}', status_code=status.HTTP_200_OK, response_model=CartResponse)
+def delete_cart_item(customer_id: str, cart_id: str, service: OrderService = Depends(get_order_service)):
+    """
+    Description / Purpose:
+        HTTP DELETE endpoint to remove a cart item by cart ID and customer ID.
+
+    Args / Parameters:
+        customer_id (str): Customer ID path parameter.
+        cart_id (str): Cart item primary key ID string path parameter.
+        service (OrderService): Injected OrderService dependency instance.
+
+    Returns:
+        CartResponse: Deleted CartResponse schema of the removed cart item.
+
+    Constraints / Notes:
+        Raises HTTP 404 Exception if the cart item is not found.
+    """
+    delete_item = service.delete_cart_item(customer_id, cart_id)
+    if not delete_item:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Cart item ID ({cart_id}) not found."
+        )
+    return delete_item
 
