@@ -1,6 +1,4 @@
-from fastapi import HTTPException
-from starlette import status
-
+from fastapi import HTTPException, status
 from backend.schemas.Cart import CartCreate, CartResponse, CartUpdate
 from backend.schemas.Order import OrderResponse
 from backend.schemas.OrderItems import OrderItem
@@ -133,8 +131,9 @@ class OrderService:
             line_total = round(quantity * unit_price, 2)
 
             order_item = OrderItem(
+                order_item_id=str(cart_item.get('id')),
                 product_id=str(cart_item.get('product_id')),
-                product_name=str(cart_item.get('product_name', target_product.get('product_name'))),
+                product_name=str(cart_item.get('product_name')),
                 quantity=quantity,
                 unit_price=unit_price,
                 total_price=line_total
@@ -354,6 +353,19 @@ class OrderService:
         return None
 
     def checkout(self, customer_id: str) -> list[OrderItem]:
+        """
+        Description / Purpose:
+            Transforms active cart items for a given customer into a list of OrderItem models with live pricing.
+
+        Args / Parameters:
+            customer_id (str): Unique customer ID string.
+
+        Returns:
+            list[OrderItem]: List of populated OrderItem schemas.
+
+        Constraints / Notes:
+            Raises HTTP 404 Not Found if a cart product no longer exists in inventory.
+        """
         order_items = []
 
         for cart_item in self.cart_cache:
@@ -363,7 +375,7 @@ class OrderService:
                 if not product:
                     raise HTTPException(status_code=404, detail=f"Product {cart_item['product_id']} no longer exists.")
 
-                unit_price = product["unit_price"]
+                unit_price = product.unit_price
 
                 # 2. Calculate total price for this line item
                 line_total = cart_item["quantity"] * unit_price
