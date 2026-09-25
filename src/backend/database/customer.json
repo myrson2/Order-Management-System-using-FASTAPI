@@ -1,2 +1,14 @@
-{
-    "id": 
+[
+    {
+        "id": "f1ac8f7a-3d4b-451c-bdb6-87c5bf1c0787",
+        "first_name": "Dylan",
+        "last_name": "Lanic",
+        "email": "dylan@gmail.com",
+        "phone": "09064495279",
+        "created_at": "2026-09-15T20:06:03.336524",
+        "active_status": "online",
+        "password": "Dylan@123",
+        "user_type": "customer",
+        "rewards": 0.0
+    }
+]

@@ -1,4 +1,3 @@
-from backend.schemas.Product import Product
 
 class UserService:
     """Base business logic and caching service for user entities."""

@@ -1,5 +1,4 @@
 import httpx
-
 from backend.schemas.Users import Customer, CustomerResponse, Merchant, MerchantResponse
 from backend.schemas.Users.User import UserLogin, UserResponse
 from pydantic import ValidationError
@@ -66,7 +65,7 @@ class UserInterface:
             print(f"\n{e}")
             return None
         except httpx.RequestError:
-            print("\n[API ERROR] Could not connect to server. Ensure FastAPI is running on http://127.0.0.1:8000")
+            print("\n[API ERROR] Could not connect to server. Ensure FastAPI is running on http://127.0.0.1:8001")
             return None
 
     def account_registration(self):
@@ -126,9 +125,11 @@ class UserInterface:
                     loop = False
 
                 except ValidationError as e:
-                    print("validation error: ", e)
-                except ValueError as e:
-                    print(e)
+                    print("\n[VALIDATION ERROR] Please fix the following errors and try again:")
+                    for err in e.errors():
+                        field = " -> ".join(str(loc) for loc in err.get("loc", []))
+                        print(f" - {field.capitalize()}: {err.get('msg')}")
+                    print() # Extra spacing before the loop restarts
 
             if data is None:
                 raise ValueError("\n[ERROR] No data provided.")

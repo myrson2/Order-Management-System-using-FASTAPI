@@ -217,55 +217,123 @@ class ProductRepository(Repository):
                 return load_file
         except json.JSONDecodeError:
             return []
-# class OrderRepository(Repository):
-#     """Handles in-memory storage of order data records."""
-#
-#     def __init__(self) -> None:
-#         """
-#         Description / Purpose:
-#             Initializes OrderRepository with an empty in-memory list.
-#
-#         Args / Parameters:
-#             None.
-#
-#         Returns:
-#             None.
-#
-#         Constraints / Notes:
-#             Temporary in-memory storage before database integration.
-#         """
-#         self.order_repos: list[dict] = []
-#
-#     def save_repo(self, order_data: dict):
-#         """
-#         Description / Purpose:
-#             Appends an order dictionary record to the in-memory repository list.
-#
-#         Args / Parameters:
-#             order_data (dict): Order dictionary payload to save.
-#
-#         Returns:
-#             dict: The saved order dictionary.
-#
-#         Constraints / Notes:
-#             Appends directly to self.order_repos.
-#         """
-#         self.order_repos.append(order_data)
-#         return order_data
-#
-#     def load_repo(self) -> list[dict]:
-#         """
-#         Description / Purpose:
-#             Retrieves all order records stored in memory.
-#
-#         Args / Parameters:
-#             None.
-#
-#         Returns:
-#             list[dict]: List of all order dictionaries.
-#
-#         Constraints / Notes:
-#             Returns in-memory list self.order_repos.
-#         """
-#         return self.order_repos
+class OrderRepository(Repository):
+    """Handles persistent reading and writing of order JSON data."""
+
+    def __init__(self, file_path: Path) -> None:
+        """
+        Description / Purpose:
+            Initializes OrderRepository with a specific JSON file storage path.
+
+        Args / Parameters:
+            file_path (Path): Pathlib Path pointing to order.json storage file.
+
+        Returns:
+            None.
+
+        Constraints / Notes:
+            Stores target path reference for file-based JSON persistence operations.
+        """
+        self.file_path = file_path
+
+    def save_repo(self, data: list[dict]) -> None:
+        """
+        Description / Purpose:
+            Writes order receipt data records into the order.json file with 4-space indentation.
+
+        Args / Parameters:
+            data (list[dict]): List of order dictionaries to persist.
+
+        Returns:
+            None.
+
+        Constraints / Notes:
+            Creates parent directories automatically if missing.
+        """
+        self.file_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(self.file_path, "w", encoding="utf-8") as file:
+            json.dump(data, file, indent=4)
+
+    def load_repo(self) -> list[dict]:
+        """
+        Description / Purpose:
+            Reads and parses order receipt data records from the order.json file.
+
+        Args / Parameters:
+            None.
+
+        Returns:
+            list[dict]: List of order dictionaries (or empty list if file missing/corrupt).
+
+        Constraints / Notes:
+            Catches JSONDecodeError and returns an empty list if syntax is invalid.
+        """
+        try:
+            if not self.file_path.exists():
+                return []
+            with open(self.file_path, "r", encoding="utf-8") as json_file:
+                load_file = json.load(json_file)
+                return load_file
+        except json.JSONDecodeError:
+            return []
+
+class CartRepository(Repository):
+    """Handles persistent reading and writing of cart JSON data."""
+
+    def __init__(self, file_path: Path) -> None:
+        """
+        Description / Purpose:
+            Initializes CartRepository with a specific JSON file storage path.
+
+        Args / Parameters:
+            file_path (Path): Pathlib Path pointing to cart.json storage file.
+
+        Returns:
+            None.
+
+        Constraints / Notes:
+            Stores target path reference for file-based JSON persistence operations.
+        """
+        self.file_path = file_path
+
+    def save_repo(self, data: list[dict]) -> None:
+        """
+        Description / Purpose:
+            Writes cart data records into the cart.json file with 4-space indentation.
+
+        Args / Parameters:
+            data (list[dict]): List of cart dictionaries to persist.
+
+        Returns:
+            None.
+
+        Constraints / Notes:
+            Creates parent directories automatically if missing.
+        """
+        self.file_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(self.file_path, "w", encoding="utf-8") as file:
+            json.dump(data, file, indent=4)
+
+    def load_repo(self) -> list[dict]:
+        """
+        Description / Purpose:
+            Reads and parses cart data records from the cart.json file.
+
+        Args / Parameters:
+            None.
+
+        Returns:
+            list[dict]: List of cart dictionaries (or empty list if file missing/corrupt).
+
+        Constraints / Notes:
+            Catches JSONDecodeError and returns an empty list if syntax is invalid.
+        """
+        try:
+            if not self.file_path.exists():
+                return []
+            with open(self.file_path, "r", encoding="utf-8") as json_file:
+                load_file = json.load(json_file)
+                return load_file
+        except json.JSONDecodeError:
+            return []
 

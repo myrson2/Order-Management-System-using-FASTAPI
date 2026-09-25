@@ -2,6 +2,7 @@ import os
 from dotenv import load_dotenv
 
 from backend.interface import merchant_interface
+from backend.interface import customer_interface
 from backend.interface.handle_user import UserInterface
 from backend.interface.merchant_interface import MerchantInterface
 from backend.schemas.Users import MerchantResponse
@@ -11,7 +12,6 @@ load_dotenv()
 API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8001/api/v1")
 CUSTOMER_URL = f"{API_BASE_URL}/customer"
 MERCHANT_URL = f"{API_BASE_URL}/merchant"
-ORDER_URL = f"{API_BASE_URL}/order"
 user_interface = UserInterface(CUSTOMER_URL, MERCHANT_URL)
 
 def menu() -> None: 
@@ -95,7 +95,7 @@ def main_interface() -> None:
             if isinstance(current_user, MerchantResponse):
                 merchant_interface.merchant_interface(current_user)
             else:
-                print("NOPE ITS NOT")
+                customer_interface.customer_interface(current_user)
 
             current_user = None
 

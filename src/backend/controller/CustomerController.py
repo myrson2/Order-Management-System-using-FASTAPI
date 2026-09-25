@@ -1,12 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from backend.dependencies import get_customer_service
-from backend.schemas.Users import Customer
+from backend.dependencies import get_customer_service, API_BASE_URL
+from backend.schemas.Users import Customer, MerchantResponse
 from backend.service.customer_service import CustomerService
+from backend.dependencies import get_base_url
 
-from backend.dependencies import AUTH_SERVICE_URL
-
-router = APIRouter(prefix=f"{AUTH_SERVICE_URL}/customer", tags=["Customer"])
+router = APIRouter(prefix=f"{get_base_url}/customer", tags=["Customer"])
 
 @router.get("/")
 def get_customers(service: CustomerService = Depends(get_customer_service)):
@@ -44,6 +43,22 @@ def create_customer(customer: Customer, service: CustomerService = Depends(get_c
     print(customer.model_dump())
     service.add(customer.to_dict())
 
+@router.get('/stores', status_code=status.HTTP_200_OK, response_model=list[dict])
+def get_stores(service: CustomerService = Depends(get_customer_service)):
+    return service.get_stores(API_BASE_URL)
+
+@router.get('/stores/{store_name}', status_code=status.HTTP_200_OK, response_model=MerchantResponse)
+def get_merchant_by_store(store_name: str, service: CustomerService = Depends(get_customer_service)):
+    return service.get_merchant(store_name)
+
+@router.get('/stores/{store_name}/all_products', status_code=status.HTTP_200_OK, response_model=list[dict])
+def get_store_products(store_name: str, service: CustomerService = Depends(get_customer_service)):
+    return service.get_store_products(store_name)
+
+# @router.get('/stores/{store_name/product/{product_id}', status_code=status.HTTP_200_OK, response_model=MerchantResponse)
+# def get_product_by_id(store_name: str, product_id: str, service: CustomerService = Depends(get_customer_service)):
+#     pass
+
 @router.get("/{customer_id}")
 def get_customer_by_id(customer_id: str, service: CustomerService = Depends(get_customer_service)):
     """
@@ -71,6 +86,8 @@ def get_customer_by_id(customer_id: str, service: CustomerService = Depends(get_
 #     if not update_data:
 #         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer not found")
 #     return update_data
+
+
 
 
 

@@ -3,14 +3,20 @@ from uuid import uuid4, UUID
 from datetime import datetime
 from backend.schemas.OrderItems import OrderItem
 
-
 class Order(BaseModel):
     id: UUID = Field(default_factory=uuid4)
-    customer_id: UUID
+    customer_id: str
     order_date: datetime = Field(default_factory=datetime.now)
     order_list: list[OrderItem] = Field(default_factory=list)
     total_amount: float
-    
+
+class OrderCreate(Order):
+    created_at: datetime = Field(default_factory=datetime.now)
+
+class OrderResponse(Order):
+    pass
+
+
 
 
     

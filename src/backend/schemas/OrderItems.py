@@ -1,10 +1,15 @@
 from uuid import uuid4, UUID
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
 
 class OrderItem(BaseModel):
-    order_item_id: UUID = Field(default_factory=uuid4)
-    order_id: UUID
+    order_item_id: str
+    total_price: float
     product_id: str
     quantity: float = Field(gt=0)
+    product_name: str
     unit_price: float
-    total_price: float
+
+
+class OrderItemCreate(OrderItem):
+    pass

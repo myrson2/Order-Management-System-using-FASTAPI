@@ -198,5 +198,4 @@ class MerchantService(UserService):
                 product.update(update_fields)
                 self.save_product_cache()
                 return ProductResponse(**product)
-
         return None
